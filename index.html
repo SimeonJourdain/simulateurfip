@@ -1,0 +1,2683 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Simulateur Salaire & FIP — Partenamut</title>
+<!-- Calibri is a system font, no import needed -->
+<style>
+:root {
+  --bg:           #F4F7FB;
+  --surface:      #FFFFFF;
+  --surface2:     #EEF4FA;
+  --primary:      #1E2D6B;
+  --accent:       #3B8DC8;
+  --accent-light: #DFF0FA;
+  --accent2:      #F0A500;
+  --accent2-light:#FEF5E0;
+  --text:         #000000;
+  --muted:        #444444;
+  --border:       #C8D8EA;
+  --danger:       #C0392B;
+  --danger-light: #FDECEA;
+  --radius:       12px;
+  --shadow:       0 2px 12px rgba(30,45,107,0.08);
+  --shadow-lg:    0 8px 40px rgba(30,45,107,0.14);
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: Calibri, 'Calibri', 'Trebuchet MS', Arial, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; font-size: 15px; line-height: 1.6; }
+
+/* HEADER */
+header {
+  background: linear-gradient(135deg, #1E2D6B 0%, #2A4A8A 100%);
+  color: white;
+  padding: 0 40px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 60px;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: var(--shadow-lg);
+}
+header h1 { font-family: Calibri, 'Calibri', 'Trebuchet MS', Arial, sans-serif; font-size: 1.3rem; font-weight: 400; letter-spacing: -0.02em; }
+header h1 span { color: #7ECFFF; }
+.lang-toggle { display: flex; gap: 3px; background: rgba(255,255,255,0.12); border-radius: 8px; padding: 3px; }
+.lang-toggle button { background: transparent; border: none; color: rgba(255,255,255,0.65); padding: 3px 10px; border-radius: 5px; cursor: pointer; font-family: Calibri, 'Calibri', 'Trebuchet MS', Arial, sans-serif; font-size: 12px; font-weight: 600; transition: all 0.2s; }
+.lang-toggle button.active { background: white; color: var(--primary); }
+
+/* MAIN TABS */
+.main-tabs {
+  display: flex;
+  background: var(--primary);
+  padding: 0 40px;
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+  position: sticky;
+  top: 60px;
+  z-index: 99;
+}
+.main-tab {
+  padding: 14px 28px;
+  border: none;
+  background: none;
+  font-family: Calibri, 'Calibri', 'Trebuchet MS', Arial, sans-serif;
+  font-size: 0.88rem;
+  font-weight: 500;
+  color: rgba(255,255,255,0.55);
+  cursor: pointer;
+  border-bottom: 3px solid transparent;
+  margin-bottom: -1px;
+  transition: all 0.2s;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.main-tab.active { color: white; border-bottom-color: var(--accent); }
+.main-tab:hover:not(.active) { color: rgba(255,255,255,0.85); }
+.tab-num {
+  width: 20px; height: 20px; border-radius: 50%;
+  background: rgba(255,255,255,0.15); color: rgba(255,255,255,0.7);
+  font-size: 0.7rem; font-weight: 700; display: inline-flex;
+  align-items: center; justify-content: center; flex-shrink: 0;
+}
+.main-tab.active .tab-num { background: var(--accent); color: white; }
+
+.tab-pane { display: none; }
+.tab-pane.active { display: block; }
+
+/* CONTAINER */
+.container { max-width: 1200px; margin: 0 auto; padding: 28px 24px 60px; }
+
+/* CARDS */
+.card { background: var(--surface); border-radius: var(--radius); border: 1px solid var(--border); box-shadow: var(--shadow); overflow: hidden; margin-bottom: 16px; }
+.card-header { padding: 14px 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 10px; background: var(--surface2); }
+.card-header h2 { font-family: Calibri, 'Calibri', 'Trebuchet MS', Arial, sans-serif; font-size: 1rem; font-weight: 400; }
+.card-icon { width: 28px; height: 28px; border-radius: 6px; background: var(--primary); color: white; display: flex; align-items: center; justify-content: center; font-size: 13px; flex-shrink: 0; }
+.card-body { padding: 20px; }
+
+/* LAYOUT */
+.two-col { display: grid; grid-template-columns: 1fr 360px; gap: 20px; align-items: start; }
+.sticky-panel { position: sticky; top: 120px; }
+
+/* FORM */
+.field { margin-bottom: 14px; }
+.field label { display: block; font-size: 12px; font-weight: 600; color: #000000; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 0.05em; }
+.field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.field-row3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+.input-wrap { position: relative; display: flex; align-items: center; }
+.input-select { width: 100%; padding: 8px 32px 8px 12px; border: 1.5px solid var(--border); border-radius: 8px; background: var(--surface) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23888' d='M6 8L1 3h10z'/%3E%3C/svg%3E") no-repeat right 10px center; -webkit-appearance: none; appearance: none; font-family: Calibri, 'Calibri', 'Trebuchet MS', Arial, sans-serif; font-size: 14px; font-weight: 500; color: var(--primary); cursor: pointer; transition: border-color 0.15s; }
+.input-select:focus { outline: none; border-color: var(--accent); }
+.input-select:hover { border-color: var(--accent); }
+.input-wrap .unit { position: absolute; right: 11px; color: var(--muted); font-size: 12px; pointer-events: none; }
+input[type="number"], input[type="date"], select {
+  width: 100%; padding: 9px 32px 9px 11px;
+  border: 1.5px solid var(--border); border-radius: 8px;
+  font-family: Calibri, 'Calibri', 'Trebuchet MS', Arial, sans-serif; font-size: 13px;
+  color: var(--text); background: var(--surface);
+  transition: border-color 0.2s; appearance: none;
+}
+input:focus, select:focus { outline: none; border-color: var(--accent); }
+.hint { font-size: 11px; color: #333333; font-style: italic; margin-top: 3px; line-height: 1.4; }
+.auto-value { background: var(--accent-light); border: 1.5px solid var(--accent); border-radius: 8px; height: 38px; padding: 0 12px; display: flex; align-items: center; font-weight: 600; color: var(--primary); font-size: 13px; }
+.auto-label { font-size: 10px; color: var(--accent); font-weight: 700; margin-top: 2px; letter-spacing: 0.03em; }
+
+/* RADIO */
+.radio-group { display: flex; gap: 6px; flex-wrap: wrap; }
+.radio-opt { display: flex; align-items: center; gap: 6px; padding: 7px 13px; border: 1.5px solid var(--border); border-radius: 7px; cursor: pointer; transition: all 0.15s; font-size: 0.85rem; font-weight: 500; user-select: none; }
+.radio-opt:hover { border-color: var(--accent); background: var(--accent-light); }
+.radio-opt.selected { border-color: var(--accent); background: var(--accent-light); color: var(--primary); }
+.radio-opt input { display: none; }
+/* Benefit checkbox grid */
+.benefit-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(155px, 1fr)); gap: 8px; margin-bottom: 16px; }
+.benefit-chip { display: flex; align-items: center; gap: 8px; padding: 9px 12px; border: 1.5px solid var(--border); border-radius: 9px; cursor: pointer; transition: all 0.15s; font-size: 13px; font-weight: 500; color: var(--muted); user-select: none; background: var(--surface); }
+.benefit-chip:hover { border-color: var(--accent); background: var(--accent-light); color: var(--primary); }
+.benefit-chip.on { border-color: var(--accent); background: var(--accent-light); color: var(--primary); }
+.benefit-chip .chip-icon { font-size: 15px; }
+.benefit-chip .chip-check { width: 16px; height: 16px; border-radius: 4px; border: 2px solid currentColor; flex-shrink: 0; display: flex; align-items: center; justify-content: center; margin-left: auto; opacity: 0.4; }
+.benefit-chip.on .chip-check { background: var(--accent); border-color: var(--accent); opacity: 1; }
+.benefit-chip.on .chip-check::after { content: '✓'; font-size: 10px; color: white; font-weight: 700; }
+.benefit-detail { background: var(--surface2); border: 1.5px solid var(--border); border-left: 3px solid var(--accent); border-radius: 10px; padding: 14px 16px; margin-bottom: 10px; }
+.benefit-detail-title { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--accent); margin-bottom: 10px; }
+
+/* TOGGLE */
+.toggle-row { display: flex; justify-content: space-between; align-items: center; padding: 9px 0; }
+.toggle-label { font-size: 13px; font-weight: 500; }
+.toggle-sub { font-size: 11px; color: var(--muted); margin-top: 1px; }
+.toggle { position: relative; width: 40px; height: 22px; flex-shrink: 0; }
+.toggle input { opacity: 0; width: 0; height: 0; }
+.toggle-slider { position: absolute; inset: 0; background: var(--border); border-radius: 22px; cursor: pointer; transition: background 0.2s; }
+.toggle-slider::before { content: ''; position: absolute; width: 16px; height: 16px; left: 3px; top: 3px; background: white; border-radius: 50%; transition: transform 0.2s; box-shadow: 0 1px 3px rgba(0,0,0,0.2); }
+.toggle input:checked + .toggle-slider { background: var(--accent); }
+.toggle input:checked + .toggle-slider::before { transform: translateX(18px); }
+
+/* SLIDER */
+.slider-wrap { display: flex; align-items: center; gap: 10px; }
+.slider-wrap input[type="range"] { flex: 1; padding: 0; border: none; accent-color: var(--accent); cursor: pointer; height: 4px; }
+.slider-value { min-width: 36px; text-align: center; font-weight: 700; color: var(--accent); font-size: 16px; }
+
+/* FIP SIM TABS */
+.sim-tabs { display: flex; gap: 6px; margin-bottom: 16px; flex-wrap: wrap; align-items: center; }
+.sim-tab { padding: 7px 16px; border-radius: 8px; border: 2px solid var(--border); background: var(--surface); cursor: pointer; font-family: Calibri, 'Calibri', 'Trebuchet MS', Arial, sans-serif; font-size: 13px; font-weight: 500; color: var(--muted); transition: all 0.2s; display: flex; align-items: center; gap: 6px; }
+.sim-tab.active { border-color: var(--accent); color: var(--primary); background: var(--accent-light); }
+.sim-tab input.sim-name { background: transparent; border: none; font-family: Calibri, 'Calibri', 'Trebuchet MS', Arial, sans-serif; font-size: 13px; font-weight: 500; color: inherit; cursor: pointer; width: auto; min-width: 50px; max-width: 120px; padding: 0; }
+.sim-tab.active input.sim-name { cursor: text; }
+.sim-tab input.sim-name:focus { outline: none; border-bottom: 1px solid currentColor; }
+.sim-tab .close-s { color: var(--muted); font-size: 11px; cursor: pointer; padding: 0 2px; }
+.sim-tab .reset-s { color: var(--muted); font-size: 12px; cursor: pointer; padding: 0 2px; transition: color 0.2s; }
+.sim-tab .reset-s:hover { color: var(--accent); }
+.sim-tab .close-s:hover { color: var(--danger); }
+.add-sim-btn { padding: 7px 14px; border-radius: 8px; border: 2px dashed var(--border); background: transparent; cursor: pointer; font-family: Calibri, 'Calibri', 'Trebuchet MS', Arial, sans-serif; font-size: 12px; color: var(--muted); transition: all 0.2s; }
+.add-sim-btn:hover { border-color: var(--accent); color: var(--primary); }
+
+/* SECTION LABEL */
+.section-lbl { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); margin: 18px 0 10px; padding-bottom: 5px; border-bottom: 1px solid var(--border); }
+
+/* CAR / ENTRY */
+.entry-box { background: var(--surface2); border: 1px solid var(--border); border-radius: 9px; padding: 13px; margin-bottom: 9px; position: relative; }
+.entry-lbl { font-weight: 600; font-size: 12px; color: var(--accent); margin-bottom: 10px; }
+.remove-btn { position: absolute; top: 10px; right: 10px; background: none; border: none; color: var(--muted); cursor: pointer; font-size: 14px; padding: 2px 5px; border-radius: 4px; transition: all 0.15s; }
+.remove-btn:hover { background: var(--danger-light); color: var(--danger); }
+.add-entry-btn { width: 100%; padding: 9px; border: 2px dashed var(--border); border-radius: 8px; background: transparent; cursor: pointer; font-family: Calibri, 'Calibri', 'Trebuchet MS', Arial, sans-serif; font-size: 12px; color: var(--muted); transition: all 0.2s; margin-top: 4px; }
+.add-entry-btn:hover { border-color: var(--accent); color: var(--primary); }
+
+/* MONTH PICKER */
+.full-partial { display: flex; gap: 3px; margin-bottom: 5px; }
+.fp-btn { padding: 3px 9px; border-radius: 5px; border: 1.5px solid var(--border); background: var(--surface2); font-family: Calibri, 'Calibri', 'Trebuchet MS', Arial, sans-serif; font-size: 11px; font-weight: 500; color: var(--muted); cursor: pointer; transition: all 0.15s; }
+.fp-btn.fp-on { background: var(--accent); border-color: var(--accent); color: white; font-weight: 600; }
+.fp-btn:hover:not(.fp-on) { border-color: var(--accent); color: var(--primary); }
+.month-picker { display: flex; flex-wrap: wrap; gap: 3px; margin-bottom: 4px; }
+.mp-btn { padding: 3px 5px; border-radius: 5px; border: 1.5px solid var(--border); background: var(--surface2); font-family: Calibri, 'Calibri', 'Trebuchet MS', Arial, sans-serif; font-size: 10px; font-weight: 500; color: var(--muted); cursor: pointer; transition: all 0.15s; min-width: 28px; text-align: center; }
+.mp-btn.mp-on { background: var(--accent); border-color: var(--accent); color: white; font-weight: 600; }
+
+/* NOTICES & ALERTS */
+.notice { background: var(--accent-light); border-left: 3px solid var(--accent); border-radius: 0 7px 7px 0; padding: 9px 13px; font-size: 12px; color: var(--primary); margin-bottom: 12px; line-height: 1.5; }
+.alert { display: flex; gap: 7px; padding: 9px 12px; border-radius: 8px; font-size: 12px; margin-bottom: 10px; line-height: 1.4; }
+.alert-warn { background: #FFF8E8; border-left: 3px solid #C47A1A; color: #7A4D0A; }
+.alert-danger { background: var(--danger-light); border-left: 3px solid var(--danger); color: var(--danger); }
+.divider { border: none; border-top: 1px solid var(--border); margin: 13px 0; }
+
+/* RESULTS PANEL */
+.result-big { text-align: center; padding: 22px 16px; border-radius: 10px; margin-bottom: 13px; transition: all 0.3s; }
+.result-big.pos { background: var(--accent-light); }
+.result-big.neg { background: var(--danger-light); }
+.result-big .r-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin-bottom: 6px; }
+.result-big .r-amount { font-family: Calibri, 'Calibri', 'Trebuchet MS', Arial, sans-serif; font-size: 2.4rem; line-height: 1; }
+.result-big.pos .r-amount { color: var(--primary); }
+.result-big.neg .r-amount { color: var(--danger); }
+.result-big .r-sub { font-size: 11px; color: var(--muted); margin-top: 4px; }
+
+.r-line { display: flex; justify-content: space-between; align-items: center; padding: 7px 0; border-bottom: 1px solid rgba(0,0,0,0.05); font-size: 12.5px; }
+.r-line:last-child { border-bottom: none; }
+.r-line .val { font-weight: 600; }
+.r-line .val.neg { color: var(--danger); }
+.r-line .val.pos { color: var(--primary); }
+.r-line .val.muted { color: var(--muted); }
+.r-sep { height: 1px; background: var(--border); margin: 10px 0; }
+.r-section { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); margin: 10px 0 4px; }
+
+/* PFA BOX */
+.pfa-box { background: var(--primary); border-radius: 10px; padding: 16px; color: white; margin-top: 10px; text-align: center; }
+.pfa-box .pfa-title { font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; opacity: 0.55; margin-bottom: 8px; }
+.pfa-box .pfa-row { display: flex; justify-content: center; gap: 20px; align-items: center; }
+.pfa-box .pfa-val { font-family: Calibri, 'Calibri', 'Trebuchet MS', Arial, sans-serif; font-size: 1.5rem; color: var(--accent); }
+.pfa-box .pfa-sub { font-size: 10px; opacity: 0.5; text-transform: uppercase; letter-spacing: 0.06em; margin-top: 2px; }
+.pfa-box .pfa-arrow { opacity: 0.3; font-size: 1.1rem; }
+
+/* BUDGET BAR */
+.budget-bar { height: 8px; background: var(--border); border-radius: 8px; overflow: hidden; margin: 8px 0; }
+.budget-bar-fill { height: 100%; background: linear-gradient(90deg, var(--accent), #2E7D50); border-radius: 8px; transition: width 0.4s ease; }
+.budget-bar-fill.over { background: linear-gradient(90deg, var(--danger), #922B21); }
+.budget-status { display: flex; justify-content: space-between; align-items: center; padding: 11px 14px; border-radius: 8px; font-size: 12px; font-weight: 600; }
+.budget-status.ok { background: var(--accent-light); color: var(--primary); }
+.budget-status.over { background: var(--danger-light); color: var(--danger); }
+
+/* COMPARE */
+.compare-bar { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 13px 18px; margin-bottom: 16px; display: flex; align-items: center; justify-content: space-between; box-shadow: var(--shadow); }
+.compare-bar p { font-size: 12px; color: var(--muted); }
+.btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; border-radius: 7px; border: none; cursor: pointer; font-family: Calibri, 'Calibri', 'Trebuchet MS', Arial, sans-serif; font-size: 13px; font-weight: 500; transition: all 0.2s; }
+.btn-primary { background: var(--primary); color: white; }
+.btn-primary:hover { background: #162255; }
+.btn-outline { background: transparent; border: 1.5px solid var(--border); color: var(--text); }
+.btn-outline:hover { border-color: var(--accent); color: var(--primary); }
+.action-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+
+/* BREAKDOWN TABLE */
+.breakdown { width: 100%; border-collapse: collapse; font-size: 12px; }
+.breakdown th { text-align: left; padding: 5px 7px; color: var(--muted); font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; border-bottom: 1px solid var(--border); }
+.breakdown tr.sec-hd td { padding: 8px 7px 3px; font-weight: 700; font-size: 10px; color: var(--text); text-transform: uppercase; letter-spacing: 0.04em; }
+.breakdown tr.sec-hd.funding td { color: var(--accent); }
+.breakdown tr.sec-hd.spending td { color: var(--accent2); }
+.breakdown td { padding: 4px 7px; border-bottom: 1px solid #F0ECE6; vertical-align: top; }
+.breakdown td:last-child { text-align: right; font-weight: 500; }
+.breakdown tr.tot-row td { padding: 8px 7px; font-weight: 700; border-top: 2px solid var(--border); border-bottom: none; }
+.breakdown tr.tot-row.funding td { color: var(--accent); }
+.breakdown tr.tot-row.spending td { color: var(--accent2); }
+
+/* COMPARE TABLE */
+.compare-overflow { overflow-x: auto; }
+.compare-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.compare-table th { padding: 7px 9px; text-align: left; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); border-bottom: 2px solid var(--border); background: var(--surface2); }
+.compare-table th.sim-head { text-align: right; color: var(--primary); }
+.compare-table th.winner-head { background: var(--accent-light); }
+.compare-table td { padding: 5px 9px; border-bottom: 1px solid #F0ECE6; }
+.compare-table td.num { text-align: right; font-weight: 500; }
+.compare-table td.winner-val { font-weight: 700; color: var(--primary); }
+.compare-table tr.sec-row td { background: var(--surface2); font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); padding: 7px 9px; }
+.compare-table tr.tot-row td { font-weight: 700; border-top: 2px solid var(--border); background: var(--surface2); padding: 7px 9px; }
+.compare-table tr.bal-row td { font-family: Calibri, 'Calibri', 'Trebuchet MS', Arial, sans-serif; font-size: 1.4rem; padding: 9px; border-top: 2px solid var(--border); }
+.compare-table td.pos { color: var(--primary); }
+.compare-table td.neg { color: var(--danger); }
+
+/* BRUT-NET RECAP */
+.recap-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 14px; }
+.recap-item { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 10px 13px; }
+.recap-item .ri-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); margin-bottom: 4px; }
+.recap-item .ri-val { font-weight: 700; color: var(--primary); font-size: 13px; }
+.recap-item .ri-src { font-size: 10px; color: var(--accent); font-weight: 600; margin-top: 2px; }
+
+/* TOOLTIP */
+.tip-icon { display: inline-flex; align-items: center; justify-content: center; width: 14px; height: 14px; border-radius: 50%; background: var(--border); color: var(--muted); font-size: 8px; font-weight: 700; cursor: help; position: relative; flex-shrink: 0; margin-left: 3px; vertical-align: middle; }
+.tip-icon:hover .tip-box { display: block; }
+.tip-box { display: none; position: absolute; left: 18px; top: -4px; background: var(--text); color: white; font-size: 11px; font-weight: 400; text-transform: none; letter-spacing: 0; padding: 7px 10px; border-radius: 7px; width: 200px; z-index: 999; line-height: 1.5; box-shadow: var(--shadow-lg); }
+
+/* INFO BOX */
+.info-box { background: var(--accent-light); border: 1px solid #BBF7D0; border-radius: 10px; padding: 14px 18px; margin-bottom: 16px; }
+.info-box strong { color: var(--primary); font-size: 13px; }
+.info-box p { font-size: 12px; color: #2d6a44; margin-top: 3px; }
+
+/* BADGE */
+.atn-badge { display: inline-flex; align-items: center; font-size: 10px; font-weight: 700; color: var(--accent); background: var(--accent-light); border: 1px solid var(--accent); border-radius: 20px; padding: 1px 7px; margin-left: 5px; }
+
+/* DISCLAIMER */
+.disclaimer { background: #FFFBEB; border: 1px solid #FDE68A; border-radius: 8px; padding: 11px 14px; font-size: 11px; color: #78350F; line-height: 1.6; margin-top: 12px; }
+
+/* NEXT BTN */
+.btn-next { display: inline-flex; align-items: center; gap: 7px; margin-top: 8px; padding: 11px 22px; background: var(--accent); color: white; border: none; border-radius: 9px; font-family: Calibri, 'Calibri', 'Trebuchet MS', Arial, sans-serif; font-size: 13px; font-weight: 600; cursor: pointer; transition: background 0.2s; }
+.btn-next:hover { background: #3d9e60; }
+
+/* EDIT PANEL */
+.edit-texts-btn { background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.25); color: white; padding: 5px 12px; border-radius: 7px; cursor: pointer; font-family: Calibri, 'Calibri', 'Trebuchet MS', Arial, sans-serif; display: flex; align-items: center; gap: 5px; transition: background 0.2s; }
+.edit-texts-btn:hover { background: rgba(255,255,255,0.25); }
+.ep-section-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); padding: 7px 10px; background: var(--bg); border-radius: 6px; margin-bottom: 8px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
+.ep-section-title:hover { background: var(--accent-light); color: var(--primary); }
+.ep-fields { display: flex; flex-direction: column; gap: 7px; margin-bottom: 16px; }
+.ep-field { display: flex; flex-direction: column; gap: 3px; }
+.ep-field label { font-size: 10px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
+.ep-field input, .ep-field textarea { border: 1.5px solid var(--border); border-radius: 6px; font-family: Calibri, 'Calibri', 'Trebuchet MS', Arial, sans-serif; font-size: 12px; color: var(--text); padding: 6px 9px; width: 100%; transition: border-color 0.15s; background: white; }
+.ep-field input:focus, .ep-field textarea:focus { outline: none; border-color: var(--accent); }
+.ep-field textarea { resize: vertical; min-height: 44px; line-height: 1.4; }
+.ep-saved { position: fixed; bottom: 20px; right: 460px; background: var(--primary); color: white; padding: 8px 16px; border-radius: 8px; font-size: 12px; font-weight: 600; opacity: 0; transition: opacity 0.3s; pointer-events: none; z-index: 10000; }
+.ep-saved.show { opacity: 1; }
+
+@media print {
+  header, .main-tabs, .sim-tabs, .add-sim-btn, .action-row, .compare-bar, .lang-toggle, .btn-next { display: none !important; }
+  .two-col { grid-template-columns: 1fr; }
+  .sticky-panel { position: static; }
+  .card { box-shadow: none; break-inside: avoid; }
+}
+@media (max-width: 900px) {
+  header { padding: 0 20px; }
+  .main-tabs { padding: 0 16px; overflow-x: auto; }
+  .container { padding: 16px; }
+  .two-col { grid-template-columns: 1fr; }
+  .sticky-panel { position: static; }
+  .field-row, .field-row3 { grid-template-columns: 1fr; }
+  .recap-grid { grid-template-columns: 1fr 1fr; }
+}
+</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+</head>
+<body>
+
+<header>
+  <div style="display:flex;align-items:center;gap:16px">
+    <img src="data:image/png;base64,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" alt="Partenamut" style="height:38px;object-fit:contain;display:block;flex-shrink:0">
+    <div style="width:1px;height:28px;background:rgba(255,255,255,0.2)"></div>
+    <h1>Simulateur <span>Salaire & FIP</span></h1>
+  </div>
+  <div style="display:flex;align-items:center;gap:10px">
+
+    <button onclick="startTour()" title="Tutoriel guidé" style="background:rgba(255,255,255,0.15);border:none;color:white;width:32px;height:32px;border-radius:50%;cursor:pointer;font-size:15px;font-weight:700;font-family:'Calibri', 'Gill Sans', sans-serif,sans-serif;transition:background 0.2s;display:flex;align-items:center;justify-content:center" onmouseover="this.style.background='rgba(255,255,255,0.28)'" onmouseout="this.style.background='rgba(255,255,255,0.15)'">?</button>
+    <div class="lang-toggle">
+      <button class="active" onclick="setLang('fr')">FR</button>
+      <button onclick="setLang('en')">EN</button>
+    </div>
+  </div>
+</header>
+
+<!-- EDIT PANEL OVERLAY -->
+<div id="edit-overlay" onclick="closeEditPanel()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.35);z-index:9998"></div>
+
+<!-- EDIT PANEL -->
+<div id="edit-panel" style="display:none;position:fixed;top:0;right:0;width:440px;height:100vh;background:#fff;z-index:9999;box-shadow:-8px 0 40px rgba(0,0,0,0.15);overflow-y:auto;font-family:'Calibri', 'Gill Sans', sans-serif,sans-serif">
+  <div style="background:var(--primary);color:white;padding:18px 20px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:1">
+    <div>
+      <div style="font-family:'Calibri',Georgia,serif;font-size:1.1rem">✏️ Éditeur de textes</div>
+      <div style="font-size:11px;opacity:0.6;margin-top:2px">Modifiez les libellés affichés dans l'outil</div>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center">
+      <button onclick="resetTexts()" style="background:rgba(255,255,255,0.15);border:none;color:white;padding:5px 12px;border-radius:6px;cursor:pointer;font-family:'Calibri', 'Gill Sans', sans-serif,sans-serif;font-size:12px;font-weight:500">↺ Réinitialiser</button>
+      <button onclick="closeEditPanel()" style="background:none;border:none;color:white;font-size:18px;cursor:pointer;padding:0 4px;line-height:1">✕</button>
+    </div>
+  </div>
+  <div id="edit-panel-content" style="padding:16px"></div>
+</div>
+
+<div class="main-tabs">
+  <button class="main-tab active" onclick="switchMain('profil',this)"><span class="tab-num">1</span><span data-t="tabProfil">Mes informations</span></button>
+  <button class="main-tab" onclick="switchMain('fip',this)"><span class="tab-num">2</span><span data-t="tabFIP">Plan Cafétéria (FIP)</span></button>
+  <button class="main-tab" onclick="switchMain('brutnet',this)"><span class="tab-num">3</span><span data-t="tabBN">Simulation Brut → Net</span></button>
+</div>
+
+<!-- ============================================================ -->
+<!-- ONGLET 1 : PROFIL                                            -->
+<!-- ============================================================ -->
+<div id="pane-profil" class="tab-pane active">
+<div class="container">
+  <div class="info-box">
+    <strong data-t="profilWelcomeTitle">👋 Bienvenue dans le simulateur Mobilité & Benefits</strong>
+    <p data-t="profilWelcomeDesc">Complétez vos informations personnelles ici. Ces données seront utilisées automatiquement dans les onglets suivants pour personnaliser vos simulations.</p>
+  </div>
+
+  <div class="card">
+    <div class="card-header"><div class="card-icon">👤</div><h2 data-t="cardIdentite">Identité & Situation fiscale</h2></div>
+    <div class="card-body">
+      <div class="field-row">
+        <div class="field">
+          <label>Éligible au télétravail ?</label>
+          <div class="radio-group">
+            <label class="radio-opt" id="tele-non-lbl">
+              <input type="radio" name="teletravail" value="non" onchange="toggleTeletravail(this.value)"> Non
+            </label>
+            <label class="radio-opt selected" id="tele-oui-lbl">
+              <input type="radio" name="teletravail" value="oui" checked onchange="toggleTeletravail(this.value)"> Oui
+            </label>
+          </div>
+        </div>
+        <div class="field">
+          <label data-t="lRegime">Régime de travail (%)</label>
+          <div class="input-wrap"><input type="number" id="p-regime" value="100" min="10" max="100" step="5" oninput="recalcAll()"><span class="unit">%</span></div>
+          <div class="hint" data-t="hRegime">Ex : 80 pour un 4/5e, 50 pour mi-temps</div>
+        </div>
+      </div>
+      <div class="field" id="carto-field">
+        <label data-t="lCarto">Cartographie de fonction</label>
+        <select id="p-carto" onchange="recalcAll()" style="max-width:240px">
+          <option value="1">Cartographie 1</option><option value="2">Cartographie 2</option>
+          <option value="3">Cartographie 3</option><option value="4">Cartographie 4</option>
+          <option value="5">Cartographie 5</option><option value="6">Cartographie 6</option>
+          <option value="7">Cartographie 7</option><option value="8">Cartographie 8</option>
+          <option value="9">Cartographie 9</option><option value="10">Cartographie 10</option>
+        </select>
+        <div class="hint" style="margin-top:4px">Détermine l'indemnité mensuelle de télétravail</div>
+      </div>
+      <div class="field">
+        <label data-t="lSituation">Situation fiscale</label>
+        <div class="radio-group">
+          <label class="radio-opt selected"><input type="radio" name="situation" value="celibataire" checked onchange="recalcAll()"><span data-t="sCelib">Célibataire</span></label>
+          <label class="radio-opt"><input type="radio" name="situation" value="marie_revenu" onchange="recalcAll()"><span data-t="sMarieRev">Marié(e) / Coh. légal — conjoint avec revenus</span></label>
+          <label class="radio-opt"><input type="radio" name="situation" value="marie_sans_revenu" onchange="recalcAll()"><span data-t="smarieSans">Marié(e) / Coh. légal — conjoint sans revenus</span></label>
+          <label class="radio-opt"><input type="radio" name="situation" value="divorce" onchange="recalcAll()"><span data-t="sDivorce">Séparé(e) / Divorcé(e)</span></label>
+        </div>
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label data-t="lEnfants">Enfants à charge fiscalement</label>
+          <div class="radio-group">
+            <label class="radio-opt selected"><input type="radio" name="enfants" value="non" checked onchange="onEnfantsChange()"><span>Non</span></label>
+            <label class="radio-opt"><input type="radio" name="enfants" value="oui" onchange="onEnfantsChange()"><span>Oui</span></label>
+          </div>
+        </div>
+        <div class="field" id="nb-enfants-field" style="display:none">
+          <label data-t="lNbEnfants">Nombre d'enfants</label>
+          <div class="input-wrap"><input type="number" id="p-nbEnfants" value="1" min="1" max="10" oninput="recalcAll()"></div>
+        </div>
+      </div>
+      <!-- ONSS always applicable -->
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header"><div class="card-icon">💰</div><h2 data-t="cardRemun">Rémunération</h2></div>
+    <div class="card-body">
+      <div class="field-row">
+        <div class="field">
+          <label data-t="lBrut">Salaire mensuel brut à 100% (€)</label>
+          <div class="input-wrap"><input type="number" id="p-brut" value="0" min="0" step="50" oninput="recalcAll()"><span class="unit">€</span></div>
+          <div class="hint" data-t="hBrut">Montant à temps plein avant proratisation</div>
+        </div>
+        <div class="field">
+          <label data-t="lBrutPro">Salaire brut proratisé (calculé)</label>
+          <div class="auto-value" id="p-brut-pro-display">0,00 €</div>
+          <div class="auto-label">✦ <span data-t="autoCalc">Calculé automatiquement</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+
+  <button class="btn-next" onclick="switchMain('fip', document.querySelectorAll('.main-tab')[1])">
+    <span data-t="nextFIP">Étape suivante : Plan Cafétéria →</span>
+  </button>
+</div>
+</div>
+
+<!-- ============================================================ -->
+<!-- ONGLET 2 : FIP                                               -->
+<!-- ============================================================ -->
+<div id="pane-fip" class="tab-pane">
+<div class="container">
+  <!-- SIM TABS -->
+  <div class="sim-tabs" id="simTabs"><!-- rendered by JS --></div>
+
+  <!-- COMPARE BAR -->
+  <div class="compare-bar" id="compareBar" style="display:none">
+    <p data-t="compareHint">Vous avez plusieurs simulations — comparez-les ci-dessous.</p>
+    <button class="btn btn-outline" onclick="scrollToCompare()">📊 <span data-t="compareBtn">Comparer</span></button>
+  </div>
+
+  <div class="two-col">
+    <div id="fip-inputs"><!-- rendered by JS --></div>
+    <div class="sticky-panel" id="fip-results"><!-- rendered by JS --></div>
+  </div>
+
+  <!-- COMPARE SECTION -->
+  <div id="compareSection" style="display:none">
+    <div class="card">
+      <div class="card-header"><div class="card-icon">📊</div><h2 data-t="compareTitle">Comparaison des simulations</h2></div>
+      <div class="card-body" id="compareGrid"></div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ============================================================ -->
+<!-- ONGLET 3 : BRUT NET                                          -->
+<!-- ============================================================ -->
+<div id="pane-brutnet" class="tab-pane">
+<div class="container">
+  <div class="two-col">
+    <div>
+      <div class="info-box">
+        <strong data-t="bnInfoTitle">💡 Simulation basée sur vos données personnelles</strong>
+        <p data-t="bnInfoDesc">Les données des onglets 1 et 2 sont reprises automatiquement. La participation salariale est déduite du brut imposable. Les ATN GSM/tablette/PC sont calculés depuis vos leasings FIP.</p>
+      </div>
+      <div class="card">
+        <div class="card-header"><div class="card-icon">📋</div><h2 data-t="cardRecap">Récapitulatif de votre situation</h2></div>
+        <div class="card-body">
+          <div class="recap-grid" id="bn-recap"><!-- rendered --></div>
+        </div>
+      </div>
+      <div class="disclaimer" data-t="bnDisclaimer">⚠️ <strong>Simulation indicative.</strong> L'assurance groupe et les chèques-repas ne sont pas pris en compte. Pour une estimation complète, consultez votre fiche de paie.</div>
+      <div style="margin-top:14px">
+        <button class="btn btn-primary" style="width:100%;justify-content:center;padding:12px 16px;font-size:14px" onclick="exportPDF()">📄 Exporter en PDF</button>
+      </div>
+    </div>
+    <div class="sticky-panel">
+      <div class="card">
+        <div class="card-header"><div class="card-icon">📈</div><h2 data-t="bnResultTitle">Résultat de la simulation</h2></div>
+        <div class="card-body" id="bn-results"><!-- rendered --></div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<script>
+// ================================================================
+// TRANSLATIONS
+// ================================================================
+const TRANS = {
+  fr: {
+    tabProfil: "Mes informations",
+    tabFIP: "Plan Cafétéria (FIP)",
+    tabBN: "Simulation Brut → Net",
+    profilWelcomeTitle: "👋 Bienvenue dans le simulateur Mobilité & Benefits",
+    profilWelcomeDesc: "Complétez vos informations personnelles ici. Ces données seront utilisées automatiquement dans les onglets suivants.",
+    cardIdentite: "Identité & Situation fiscale",
+    lCarto: "Cartographie de fonction",
+    lRegime: "Régime de travail (%)",
+    hRegime: "Ex : 80 pour un 4/5e, 50 pour mi-temps",
+    lSituation: "Situation fiscale",
+    sCelib: "Célibataire",
+    sMarieRev: "Marié(e) / Coh. légal — conjoint avec revenus",
+    sarieSans: "Marié(e) / Coh. légal — conjoint sans revenus",
+    sDivorce: "Séparé(e) / Divorcé(e)",
+    lEnfants: "Enfants à charge fiscalement",
+    lNbEnfants: "Nombre d'enfants",
+    lONSS: "ONSS applicable",
+    cardRemun: "Rémunération",
+    lBrut: "Salaire mensuel brut à 100% (€)",
+    hBrut: "Montant à temps plein avant proratisation",
+    lBrutPro: "Salaire brut proratisé (calculé)",
+    autoCalc: "Calculé automatiquement",
+    cardATN: "Avantage de toute nature — Voiture",
+    alertATN: "⚠️ L'ATN voiture figure sur votre fiche de paie. Les ATN GSM, tablette et PC sont calculés automatiquement depuis vos choix FIP.",
+    lATNVoiture: "ATN voiture (€/mois)",
+    hATNVoiture: "Visible sur votre fiche de paie",
+    nextFIP: "Étape suivante : Plan Cafétéria →",
+    addSim: "Ajouter une simulation",
+    compareHint: "Vous avez plusieurs simulations — comparez-les ci-dessous.",
+    compareBtn: "Comparer",
+    compareTitle: "Comparaison des simulations",
+    sim: "Simulation",
+    cardBudget: "Budget disponible dans le FIP",
+    lPFA: "Prime de fin d'année (calculée)",
+    lPFAFormule: "✦ Salaire brut × régime × 1,17",
+    lJourConge: "Valeur d'un jour de congé (calculée)",
+    lJourFormule: "✦ Salaire brut × 3 / 13 / 5 × 1,17",
+    lPartSal: "Participation salariale mensuelle (€ bruts)",
+    hPartSal: "Tranches de 50€, max 600€/mois, salaire min 2.500€. Converti × 1,17 dans le budget.",
+    lJoursConge: "Jours de congé à convertir",
+    lTotalBudget: "Budget total disponible",
+    lTotalFormule: "✦ PFA + participations converties",
+    pfaMonthsLabel: "Nombre de mois PFA",
+    pfaMonthsTip: "12 mois si présent toute l'année. Si vous arrivez en mars, indiquez 10 (12 - jan - fév). Formule : Salaire brut × régime (%) × 1,17 / 12 × nb mois.",
+    cardMobilite: "Avantages \"Mobilité\"",
+    lVoiture: "Voiture de société",
+    lCarburant: "Carte carburant",
+    hCarburant: "Coût FIP = montant × 1,4286 (TVA non déductible)",
+    lElec: "Carte recharge électrique",
+    lVelo: "Vélo en leasing",
+    lBorne: "Borne de recharge",
+    lParking: "Carte de stationnement",
+    lParkingTamaris: "Parking Tamaris",
+    cardMultimedia: "Avantages \"Multimédia\"",
+    alertATNAuto: "📌 Les ATN sont calculés automatiquement dans Brut→Net : GSM leasing 3€, tablette 3€, PC 6€, abonnement GSM 9€/mois.",
+    lSmartphone: "Smartphone",
+    lTablette: "Tablette",
+    lPC: "PC / Laptop",
+    lAboGSM: "Abonnement smartphone",
+    lInternet: "Internet@Home",
+    cardSocial: "Avantages \"Sociaux\"",
+    lDentalia: "Dentalia",
+    hDentalia: "5€/mois/affilié → 60€/an/affilié",
+    lMedicalia: "Medicalia",
+    lEpargne: "Remboursement épargne-pension",
+    hEpargne: "Coût FIP = montant × 1,0977",
+    cardCash: "Avantages \"Cash\"",
+    lCash: "Paiement en espèces",
+    hCash: "Soumis à PP et ONSS — coût FIP = montant brut",
+    cardFlex: "Avantages \"Flexibilité\"",
+    lJoursFIP: "Jours FIP supplémentaires",
+    lOffice: "Office@Home",
+    nextBN: "Étape suivante : Simulation Brut → Net →",
+    rBudgetFIP: "Budget FIP",
+    rTotalBudget: "Budget total disponible",
+    rSources: "Sources de budget",
+    rPFA: "Prime de fin d'année",
+    rPartSal: "Participation salariale × 1,17",
+    rJours: "Jours de congé convertis",
+    rDepenses: "Dépenses",
+    rTotalDep: "Total dépenses",
+    rSoldeDisp: "✅ Solde disponible",
+    rSoldeNeg: "⚠️ Dépassement de budget",
+    funding: "Funding",
+    spending: "Spending",
+    totalFunding: "Total Funding",
+    totalSpending: "Total Spending",
+    balance: "Solde",
+    balanceGross: "Solde Brut (÷1.17)",
+    pfaLabel: "Prime de fin d'année",
+    partLabel: "Participation salariale",
+    holidayLabel: "Congés convertis",
+    car: "Voiture",
+    months: "mois",
+    breakdown: "Détail",
+    export: "Imprimer / Exporter",
+    compareWinner: "🏆 Meilleur solde",
+    fullYear: "Toute l'année",
+    someMonths: "Certains mois",
+    alertNeg: "Votre spending dépasse votre funding. Réduisez certains avantages ou augmentez votre participation.",
+    bnInfoTitle: "💡 Simulation basée sur vos données personnelles",
+    bnInfoDesc: "Les données des onglets 1 et 2 sont reprises automatiquement. La participation salariale est déduite du brut imposable.",
+    cardRecap: "Récapitulatif de votre situation",
+    bnDisclaimer: "⚠️ Simulation indicative. L'assurance groupe et les chèques-repas ne sont pas pris en compte.",
+    bnResultTitle: "Résultat de la simulation",
+    rBrutPro: "Brut proratisé",
+    rPartDed: "− Participation salariale",
+    rBrutFIP: "= Brut après FIP",
+    rONSS: "− Cotisations ONSS",
+    rATNVoiture: "+ ATN voiture",
+    rATNMulti: "+ ATN multimédia (GSM / tablette / PC / abo)",
+    rImposable: "= Salaire imposable",
+    rPP: "− Précompte professionnel",
+    rCotSpec: "− Cotisation spéciale ONSS",
+    rRecupVoiture: "− Récup. ATN voiture",
+    rRecupMulti: "− Récup. ATN GSM/tablette/PC",
+    rTeletravail: "+ Indemnité télétravail (net)",
+    rNetMensuel: "Net mensuel estimé",
+    rNetAnnuel: "Net annuel estimé (×12)",
+    rPFATitle: "Prime de fin d'année estimée",
+    rBrut: "Brut",
+    rNet: "Net estimé",
+    riSalaire: "Salaire brut proratisé",
+    riPartSal: "Participation salariale déduite",
+    riBrutFIP: "Brut imposable après FIP",
+    riCarto: "Cartographie → Indemnité télétravail",
+    riATN: "ATN GSM / Tablette / PC",
+    riATNVoiture: "ATN voiture",
+    prorata: "mois (prorata)"
+  },
+  en: {
+    tabProfil: "My information",
+    tabFIP: "Cafeteria Plan (FIP)",
+    tabBN: "Gross → Net Simulation",
+    profilWelcomeTitle: "👋 Welcome to the Mobility & Benefits simulator",
+    profilWelcomeDesc: "Fill in your personal information here. This data will be used automatically in the following tabs.",
+    cardIdentite: "Identity & Tax situation",
+    lCarto: "Job mapping",
+    lRegime: "Employment rate (%)",
+    hRegime: "E.g. 80 for 4/5, 50 for part-time",
+    lSituation: "Tax situation",
+    sCelib: "Single",
+    sMarieRev: "Married — spouse with income",
+    sarieSans: "Married — spouse without income",
+    sDivorce: "Separated / Divorced",
+    lEnfants: "Children fiscally dependent",
+    lNbEnfants: "Number of children",
+    lONSS: "ONSS applicable",
+    cardRemun: "Remuneration",
+    lBrut: "Monthly gross salary at 100% (€)",
+    hBrut: "Full-time amount before prorating",
+    lBrutPro: "Prorated gross salary (calculated)",
+    autoCalc: "Auto-calculated",
+    cardATN: "Benefit in kind — Car",
+    alertATN: "⚠️ Car BIK appears on your payslip. GSM, tablet and PC BIKs are calculated automatically from your FIP choices.",
+    lATNVoiture: "Car BIK (€/month)",
+    hATNVoiture: "Visible on your payslip",
+    nextFIP: "Next step: Cafeteria Plan →",
+    addSim: "Add a simulation",
+    compareHint: "You have multiple simulations — compare them below.",
+    compareBtn: "Compare",
+    compareTitle: "Simulation Comparison",
+    sim: "Simulation",
+    cardBudget: "Budget available in FIP",
+    lPFA: "Year-end bonus (calculated)",
+    lPFAFormule: "✦ Gross salary × working time × 1.17",
+    lJourConge: "Holiday day value (calculated)",
+    lJourFormule: "✦ Gross salary × 3 / 13 / 5 × 1.17",
+    lPartSal: "Monthly salary contribution (€ gross)",
+    hPartSal: "Steps of €50, max €600/month, min salary €2,500. Converted × 1.17 in budget.",
+    lJoursConge: "Holidays to convert",
+    lTotalBudget: "Total budget available",
+    lTotalFormule: "✦ PFA + converted contributions",
+    pfaMonthsLabel: "PFA months",
+    pfaMonthsTip: "12 months if present all year. If starting in March, enter 10 (12 - Jan - Feb). Formula: Gross salary × working time (%) × 1.17 / 12 × months.",
+    cardMobilite: "\"Mobility\" Benefits",
+    lVoiture: "Company car",
+    lCarburant: "Fuel card",
+    hCarburant: "FIP cost = amount × 1.4286 (non-deductible VAT)",
+    lElec: "Electric charging card",
+    lVelo: "Bike leasing",
+    lBorne: "Charging station",
+    lParking: "Parking card",
+    lParkingTamaris: "Tamaris Parking",
+    cardMultimedia: "\"Multimedia\" Benefits",
+    alertATNAuto: "📌 GSM, tablet and PC BIKs are automatically calculated in the Gross→Net simulation if you choose leasing here.",
+    lSmartphone: "Smartphone",
+    lTablette: "Tablet",
+    lPC: "PC / Laptop",
+    lAboGSM: "Smartphone subscription",
+    lInternet: "Internet@Home",
+    cardSocial: "\"Social\" Benefits",
+    lDentalia: "Dentalia",
+    hDentalia: "€5/month/member → €60/year/member",
+    lMedicalia: "Medicalia",
+    lEpargne: "Pension savings reimbursement",
+    hEpargne: "FIP cost = amount × 1.0977",
+    cardCash: "\"Cash\" Benefits",
+    lCash: "Cash payment",
+    hCash: "Subject to PP and ONSS — FIP cost = gross amount",
+    cardFlex: "\"Flexibility\" Benefits",
+    lJoursFIP: "Additional FIP days",
+    lOffice: "Office@Home",
+    nextBN: "Next step: Gross → Net Simulation →",
+    rBudgetFIP: "FIP Budget",
+    rTotalBudget: "Total budget available",
+    rSources: "Budget sources",
+    rPFA: "Year-end bonus",
+    rPartSal: "Salary contribution × 1.17",
+    rJours: "Converted holidays",
+    rDepenses: "Expenses",
+    rTotalDep: "Total expenses",
+    rSoldeDisp: "✅ Available balance",
+    rSoldeNeg: "⚠️ Budget exceeded",
+    funding: "Funding",
+    spending: "Spending",
+    totalFunding: "Total Funding",
+    totalSpending: "Total Spending",
+    balance: "Balance",
+    balanceGross: "Gross Balance (÷1.17)",
+    pfaLabel: "Year-end bonus",
+    partLabel: "Salary contribution",
+    holidayLabel: "Converted holidays",
+    car: "Car",
+    months: "months",
+    breakdown: "Breakdown",
+    export: "Print / Export",
+    compareWinner: "🏆 Best balance",
+    fullYear: "Full year",
+    someMonths: "Some months",
+    alertNeg: "Your spending exceeds your funding. Reduce some benefits or increase your contribution.",
+    bnInfoTitle: "💡 Simulation based on your personal data",
+    bnInfoDesc: "Data from tabs 1 and 2 is used automatically. Salary contribution is deducted from the taxable gross.",
+    cardRecap: "Summary of your situation",
+    bnDisclaimer: "⚠️ Indicative simulation. Group insurance and meal vouchers are not included.",
+    bnResultTitle: "Simulation result",
+    rBrutPro: "Prorated gross",
+    rPartDed: "− Salary contribution",
+    rBrutFIP: "= Gross after FIP",
+    rONSS: "− ONSS contributions",
+    rATNVoiture: "+ Car BIK",
+    rATNMulti: "+ GSM / tablet / PC BIK",
+    rImposable: "= Taxable salary",
+    rPP: "− Professional withholding tax",
+    rCotSpec: "− Special ONSS contribution",
+    rRecupVoiture: "− Car BIK recovery",
+    rRecupMulti: "− GSM/tablet/PC BIK recovery",
+    rTeletravail: "+ Telework allowance (net)",
+    rNetMensuel: "Estimated monthly net",
+    rNetAnnuel: "Estimated annual net (×12)",
+    rPFATitle: "Estimated year-end bonus",
+    rBrut: "Gross",
+    rNet: "Estimated net",
+    riSalaire: "Prorated gross salary",
+    riPartSal: "Salary contribution deducted",
+    riBrutFIP: "Taxable gross after FIP",
+    riCarto: "Mapping → Telework allowance",
+    riATN: "GSM / Tablet / PC BIK",
+    riATNVoiture: "Car BIK",
+    prorata: "months (prorated)"
+  }
+};
+
+let lang = 'fr';
+function t(k) { return TRANS[lang][k] || k; }
+
+function setLang(l) {
+  lang = l;
+  document.querySelectorAll('.lang-toggle button').forEach(b => b.classList.toggle('active', b.textContent === l.toUpperCase()));
+  // update data-t elements
+  document.querySelectorAll('[data-t]').forEach(el => {
+    const k = el.getAttribute('data-t');
+    if (TRANS[lang][k]) el.textContent = TRANS[lang][k];
+  });
+  renderFIP();
+  renderBrutNet();
+}
+
+// ================================================================
+// MAIN TAB SWITCHING
+// ================================================================
+function switchMain(pane, btn) {
+  document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.main-tab').forEach(b => b.classList.remove('active'));
+  document.getElementById('pane-' + pane).classList.add('active');
+  if (btn) btn.classList.add('active');
+  recalcAll();
+}
+
+// ================================================================
+// PROFIL HELPERS
+// ================================================================
+function onEnfantsChange() {
+  const v = getRadio('enfants');
+  document.getElementById('nb-enfants-field').style.display = v === 'oui' ? 'block' : 'none';
+  recalcAll();
+}
+
+document.querySelectorAll('input[name="enfants"]').forEach(r => r.addEventListener('change', onEnfantsChange));
+document.querySelectorAll('.radio-opt').forEach(opt => {
+  opt.addEventListener('click', function() {
+    const inp = this.querySelector('input');
+    if (!inp) return;
+    document.querySelectorAll(`input[name="${inp.name}"]`).forEach(i => i.closest('.radio-opt').classList.remove('selected'));
+    this.classList.add('selected');
+  });
+});
+
+// ================================================================
+// FIP SIMULATIONS DATA
+// ================================================================
+const COEFF = 1.17;
+let simulations = [];
+let activeSimId = null;
+let simCounter = 0;
+
+function noMonths() { return new Array(12).fill(false); }
+
+function newSim(n) {
+  return {
+    id: Date.now() + Math.random(),
+    name: t('sim') + ' ' + n,
+    pfaMonths: 12,
+    partSal: 0, partSalMonths: 12, partSal2: 0, partSal2Months: 12, hasPartSal2: false,
+    joursConge: 0,
+    // cars
+    voiture_on: false, atnVoiture: 0,
+    cars: [{ id: 1, rent: 0, atn: 0, start: '2026-01-01', end: '2026-12-31' }],
+    multiCar: false,
+    // fuel
+    carbu_on: false, carbu: 0, carbuFull: true, carbuM: noMonths(),
+    elec_on: false, elec: 0, elecFull: true, elecM: noMonths(),
+    // borne
+    borneOui: false, borneFull: true, borneM: noMonths(),
+    // parking
+    parking: false, parkingTamaris_on: false, parkingTamarisNb: 0,
+    // multimedia
+    velo_on: false, velos: [{ id: 1, amount: 0, full: true, months: [] }],
+    sm_on: false, smartphones: [{ id: 1, amount: 0, full: true, months: [] }],
+    tab_on: false, tablets: [{ id: 1, amount: 0, full: true, months: [] }],
+    pc_on: false, pcs: [{ id: 1, amount: 0, full: true, months: [] }],
+    aboGSM: 0, aboGSMOui: false, aboGSMFull: true, aboGSMM: noMonths(),
+    internet_on: false, internet: 0, internetFull: true, internetM: noMonths(),
+    // social
+    dentalia_on: false, dentaliaNb: 0, dentaliaFull: true, dentaliaM: noMonths(),
+    medicalia_on: false, medicalia: 0, medicaliaFull: true, medicaliaM: noMonths(),
+    epargne_on: false, epargne: 0,
+    // cash
+    cash_on: false, cash: 0,
+    // flex
+    joursFIP: 0,
+    office_on: false, office: 0,
+  };
+}
+
+function addSimulation() {
+  simCounter++;
+  const sim = newSim(simCounter);
+  simulations.push(sim);
+  activeSimId = sim.id;
+  renderFIP();
+}
+
+function resetSim(id) {
+  const idx = simulations.findIndex(x => x.id === id);
+  if (idx === -1) return;
+  const name = simulations[idx].name;
+  simulations[idx] = { ...newSim(simCounter), id, name };
+  renderFIP();
+}
+
+function removeSimulation(id) {
+  simulations = simulations.filter(s => s.id !== id);
+  if (activeSimId === id) activeSimId = simulations.length ? simulations[0].id : null;
+  renderFIP();
+}
+
+function renameSim(id, name) {
+  const s = simulations.find(x => x.id === id);
+  if (s) s.name = name;
+}
+
+function activeSim() { return simulations.find(s => s.id === activeSimId); }
+
+function upd(id, key, val) {
+  const s = simulations.find(x => x.id === id);
+  if (!s) return;
+  s[key] = val;
+
+  // When unchecking an _on flag → reset associated data to avoid ghost values
+  if (key === 'voiture_on' && !val) {
+    s.cars = [{ id: 1, rent: 0, atn: 0, start: '2026-01-01', end: '2026-12-31' }];
+    s.multiCar = false;
+    s.atnVoiture = 0;
+  }
+  if (key === 'velo_on'  && !val) { s.velos        = [{ id: 1, amount: 0, full: true, months: [] }]; }
+  if (key === 'sm_on'    && !val) { s.smartphones  = [{ id: 1, amount: 0, full: true, months: [] }]; }
+  if (key === 'tab_on'   && !val) { s.tablets       = [{ id: 1, amount: 0, full: true, months: [] }]; }
+  if (key === 'pc_on'    && !val) { s.pcs           = [{ id: 1, amount: 0, full: true, months: [] }]; }
+  if (key === 'carbu_on'    && !val) { s.carbu = 0; }
+  if (key === 'elec_on'     && !val) { s.elec = 0; }
+  if (key === 'internet_on' && !val) { s.internet = 0; }
+  if (key === 'dentalia_on' && !val) { s.dentaliaNb = 0; }
+  if (key === 'medicalia_on'&& !val) { s.medicalia = 0; }
+  if (key === 'epargne_on'  && !val) { s.epargne = 0; }
+  if (key === 'cash_on'     && !val) { s.cash = 0; }
+  if (key === 'office_on'   && !val) { s.office = 0; }
+  if (key === 'aboGSMOui'   && !val) { s.aboGSM = 0; }
+  if (key === 'borneOui'    && !val) { /* nothing to reset, 65€ is fixed */ }
+  if (key === 'parking'     && !val) { /* nothing to reset, 300€ is fixed */ }
+  if (key === 'parkingTamaris_on' && !val) { s.parkingTamarisNb = 0; }
+
+  renderFIP(); renderBrutNet();
+}
+
+function updAtnVoiture(id, val) {
+  const s = simulations.find(x => x.id === id);
+  if (s) { s.atnVoiture = val; renderBrutNet(); }
+}
+
+
+function updCarAtn(simId, carId, val) {
+  const s = simulations.find(x => x.id === simId);
+  if (!s) return;
+  const c = s.cars.find(c => c.id === carId);
+  if (c) { c.atn = val; renderBrutNet(); }
+}
+
+function updCar(simId, carId, field, val) {
+  const s = simulations.find(x => x.id === simId);
+  if (!s) return;
+  const c = s.cars.find(c => c.id === carId);
+  if (c) { c[field] = val; renderFIP(); renderBrutNet(); }
+}
+
+function addCar(simId) {
+  const s = simulations.find(x => x.id === simId);
+  if (!s) return;
+  s.cars.push({ id: Date.now(), rent: 0, atn: 0, start: '2026-01-01', end: '2026-12-31' });
+  renderFIP();
+}
+
+function removeCar(simId, carId) {
+  const s = simulations.find(x => x.id === simId);
+  if (!s || s.cars.length <= 1) return;
+  s.cars = s.cars.filter(c => c.id !== carId);
+  renderFIP();
+}
+
+function toggleCar(simId, val) {
+  const s = simulations.find(x => x.id === simId);
+  if (!s) return;
+  s.multiCar = val;
+  renderFIP();
+}
+
+function addEntry(simId, key) {
+  const s = simulations.find(x => x.id === simId);
+  if (!s) return;
+  if (!s[key]) s[key] = [];
+  s[key].push({ id: Date.now(), amount: 0, full: false, months: noMonths() });
+  renderFIP();
+}
+
+function removeEntry(simId, key, eid) {
+  const s = simulations.find(x => x.id === simId);
+  if (!s || s[key].length <= 1) return;
+  s[key] = s[key].filter(e => e.id !== eid);
+  renderFIP();
+}
+
+function updEntry(simId, key, eid, field, val) {
+  const s = simulations.find(x => x.id === simId);
+  if (!s) return;
+  const e = s[key].find(x => x.id === eid);
+  if (e) { e[field] = val; renderFIP(); renderBrutNet(); }
+}
+
+function updEntryMonth(simId, key, eid, idx, val) {
+  const s = simulations.find(x => x.id === simId);
+  if (!s) return;
+  const e = s[key].find(x => x.id === eid);
+  if (!e) return;
+  if (!e.months) e.months = noMonths();
+  e.months[idx] = val;
+  renderFIP(); renderBrutNet();
+}
+
+
+function toggleMonth(simId, mKey, idx) {
+  const s = simulations.find(x => x.id === simId);
+  if (!s) return;
+  s[mKey][idx] = !s[mKey][idx];
+  renderFIP(); renderBrutNet();
+}
+
+
+function setFullYear(simId, fKey, val) {
+  const s = simulations.find(x => x.id === simId);
+  if (!s) return;
+  s[fKey] = val;
+  renderFIP();
+}
+
+// ================================================================
+// CALCULATIONS
+// ================================================================
+function calcCarTotal(rent, startStr, endStr) {
+  if (!startStr || !endStr || !rent) return 0;
+  const start = new Date(startStr), end = new Date(endStr);
+  if (isNaN(start) || isNaN(end) || end < start) return 0;
+  let total = 0;
+  for (let y = start.getFullYear(); y <= end.getFullYear(); y++) {
+    const mS = (y === start.getFullYear()) ? start.getMonth() : 0;
+    const mE = (y === end.getFullYear()) ? end.getMonth() : 11;
+    for (let m = mS; m <= mE; m++) {
+      const dim = new Date(y, m + 1, 0).getDate();
+      const df = (y === start.getFullYear() && m === start.getMonth()) ? start.getDate() : 1;
+      const dt = (y === end.getFullYear() && m === end.getMonth()) ? end.getDate() : dim;
+      total += rent * (dt - df + 1) / dim;
+    }
+  }
+  return total;
+}
+
+function carMonthsDisp(s, e) {
+  if (!s || !e) return '0';
+  const sd = new Date(s), ed = new Date(e);
+  if (isNaN(sd) || isNaN(ed) || ed < sd) return '0';
+  const days = Math.round((ed - sd) / 86400000) + 1;
+  return (days / 30.44).toFixed(1);
+}
+
+function countM(arr, full) { return full ? 12 : (arr || []).filter(Boolean).length; }
+
+// Returns a human-readable period string from a months boolean array or full-year flag
+const MONTH_NAMES_SHORT = ['Jan','Fév','Mar','Avr','Mai','Jun','Jul','Aoû','Sep','Oct','Nov','Déc'];
+function fmtPeriod(months, full) {
+  if (full) return 'Toute l\'année (12 mois)';
+  const active = (months || []).map((v, i) => v ? i : -1).filter(i => i >= 0);
+  if (!active.length) return '—';
+  if (active.length === 12) return 'Toute l\'année (12 mois)';
+  // Find contiguous ranges
+  const ranges = [];
+  let start = active[0], prev = active[0];
+  for (let i = 1; i <= active.length; i++) {
+    if (i < active.length && active[i] === prev + 1) { prev = active[i]; }
+    else { ranges.push(start === prev ? MONTH_NAMES_SHORT[start] : MONTH_NAMES_SHORT[start] + '→' + MONTH_NAMES_SHORT[prev]); start = active[i]; prev = active[i]; }
+  }
+  return ranges.join(', ') + ' (' + active.length + ' mois)';
+}
+function fmtPeriodEntry(entry) {
+  return fmtPeriod(entry.months, entry.full);
+}
+function fmtDatePeriod(start, end) {
+  const s = new Date(start), e = new Date(end);
+  const fmt2 = d => d.toLocaleDateString('fr-BE', { day:'2-digit', month:'2-digit', year:'numeric' });
+  return fmt2(s) + ' → ' + fmt2(e);
+}
+
+function getProfileData() {
+  const brut100 = getVal('p-brut');
+  const regime = getVal('p-regime') / 100;
+  const activS = activeSim();
+  return {
+    brut100,
+    regime,
+    brutPro: brut100 * regime,
+    carto: parseInt(document.getElementById('p-carto')?.value) || 1,
+    teletravailOui: getRadio('teletravail') === 'oui',
+    situation: getRadio('situation') || 'celibataire',
+    onssOui: true,
+    enfants: getRadio('enfants') === 'oui' ? getVal('p-nbEnfants') : 0,
+    atnVoiture: (() => {
+      if (!activS || !activS.voiture_on || !activS.cars.length) return 0;
+      // Weighted average: sum(atn_i * months_i) / 12 → monthly equivalent
+      const totalMonths = activS.cars.reduce((s, c) => s + carMonthsDisp(c.start, c.end), 0);
+      if (totalMonths === 0) return 0;
+      const weightedSum = activS.cars.reduce((s, c) => s + (c.atn || 0) * carMonthsDisp(c.start, c.end), 0);
+      return weightedSum / 12; // annualized → monthly avg for brut-net calc
+    })(),
+  };
+}
+
+function calcFIPSim(sim) {
+  const { brut100, regime } = getProfileData();
+  const pfaUnit = brut100 * regime * COEFF / 12;
+  const pfaTotal = pfaUnit * sim.pfaMonths;
+  const valeurJour = brut100 * regime * 3 / 13 / 5 * COEFF;
+  const partSalBudget = sim.partSal * sim.partSalMonths * COEFF;
+  const partSal2Budget = sim.partSal2 * sim.partSal2Months * COEFF;
+  const budgetConge = sim.joursConge * valeurJour;
+  const totalBudget = pfaTotal + partSalBudget + partSal2Budget + budgetConge;
+
+  // spending — each total is gated by its _on flag
+  const carTotal    = sim.voiture_on  ? sim.cars.reduce((s, c) => s + calcCarTotal(c.rent, c.start, c.end), 0) : 0;
+  const carbuUnit   = sim.carbu_on && sim.carbu > 0 ? sim.carbu / 0.7 : 0;
+  const carbuTotal  = sim.carbu_on    ? carbuUnit * countM(sim.carbuM, sim.carbuFull) : 0;
+  const elecTotal   = sim.elec_on     ? sim.elec * countM(sim.elecM, sim.elecFull) : 0;
+  const borneCnt    = countM(sim.borneM, sim.borneFull !== false);
+  const borneTotal  = sim.borneOui    ? 65 * borneCnt : 0;
+  const parkingTotal        = sim.parking           ? 300 : 0;
+  const parkingTamarisTotal = sim.parkingTamaris_on ? sim.parkingTamarisNb * 2.5 : 0;
+  const veloTotal   = sim.velo_on     ? sim.velos.reduce((s, e) => s + e.amount * countM(e.months, e.full), 0) : 0;
+  const smTotal     = sim.sm_on       ? sim.smartphones.reduce((s, e) => s + e.amount * countM(e.months, e.full), 0) : 0;
+  const tabTotal    = sim.tab_on      ? sim.tablets.reduce((s, e) => s + e.amount * countM(e.months, e.full), 0) : 0;
+  const pcTotal     = sim.pc_on       ? sim.pcs.reduce((s, e) => s + e.amount * countM(e.months, e.full), 0) : 0;
+  const aboGSMTotal = sim.aboGSMOui   ? 15 * countM(sim.aboGSMM, sim.aboGSMFull !== false) : 0;
+  const internetTotal = sim.internet_on ? sim.internet * countM(sim.internetM, sim.internetFull) : 0;
+  const dentaliaCnt = countM(sim.dentaliaM, sim.dentaliaFull !== false);
+  const dentaliaTotal   = sim.dentalia_on  ? sim.dentaliaNb * 5 * dentaliaCnt : 0;
+  const medicaliaTotal  = sim.medicalia_on ? sim.medicalia * countM(sim.medicaliaM, sim.medicaliaFull) : 0;
+  const epargneTotal    = sim.epargne_on   ? sim.epargne * 1.0977 : 0;
+  const cashTotal       = sim.cash_on      ? sim.cash : 0;
+  const joursFIPTotal   = sim.joursFIP > 0 ? sim.joursFIP * valeurJour : 0;
+  const officeTotal     = sim.office_on    ? sim.office : 0;
+
+  const totalSpending = carTotal + carbuTotal + elecTotal + borneTotal + parkingTotal + parkingTamarisTotal
+    + veloTotal + smTotal + tabTotal + pcTotal + aboGSMTotal + internetTotal
+    + dentaliaTotal + medicaliaTotal + epargneTotal
+    + cashTotal + joursFIPTotal + officeTotal;
+
+  const solde = totalBudget - totalSpending;
+
+  return {
+    pfaUnit, pfaTotal, valeurJour, partSalBudget, partSal2Budget, budgetConge, totalBudget,
+    carTotal, carbuUnit, carbuTotal, elecTotal, borneTotal, parkingTotal, parkingTamarisTotal,
+    smTotal, tabTotal, pcTotal, veloTotal, aboGSMTotal, internetTotal,
+    dentaliaTotal, medicaliaTotal, epargneTotal, cashTotal, joursFIPTotal, officeTotal,
+    totalSpending, solde,
+    spendingItems: [
+      ...(carTotal > 0 ? sim.cars.map((c, i) => {
+        const tot = calcCarTotal(c.rent, c.start, c.end);
+        return tot > 0 ? { label: sim.cars.length > 1 ? `Voiture ${i+1}` : t('lVoiture'), monthly: c.rent, period: fmtDatePeriod(c.start, c.end), total: tot } : null;
+      }).filter(Boolean) : []),
+      ...(carbuTotal > 0 ? [{ label: t('lCarburant'), monthly: sim.carbu > 0 ? sim.carbu/0.7 : 0, period: fmtPeriod(sim.carbuM, sim.carbuFull), total: carbuTotal }] : []),
+      ...(elecTotal > 0 ? [{ label: t('lElec'), monthly: sim.elec, period: fmtPeriod(sim.elecM, sim.elecFull), total: elecTotal }] : []),
+      ...(borneTotal > 0 ? [{ label: t('lBorne'), monthly: 65, period: fmtPeriod(sim.borneM, sim.borneFull !== false), total: borneTotal }] : []),
+      ...(parkingTotal > 0 ? [{ label: t('lParking'), monthly: null, period: 'Forfait annuel', total: parkingTotal }] : []),
+      ...(parkingTamarisTotal > 0 ? [{ label: t('lParkingTamaris'), monthly: null, period: `${sim.parkingTamarisNb} utilisation(s)`, total: parkingTamarisTotal }] : []),
+      ...sim.velos.filter(e => e.amount > 0).map((e, i) => ({ label: sim.velos.length > 1 ? `Vélo ${i+1}` : t('lVelo'), monthly: e.amount, period: fmtPeriodEntry(e), total: e.amount * countM(e.months, e.full) })),
+      ...sim.smartphones.filter(e => e.amount > 0).map((e, i) => ({ label: sim.smartphones.length > 1 ? `Smartphone ${i+1}` : 'Smartphone', monthly: e.amount, period: fmtPeriodEntry(e), total: e.amount * countM(e.months, e.full) })),
+      ...sim.tablets.filter(e => e.amount > 0).map((e, i) => ({ label: sim.tablets.length > 1 ? `Tablette ${i+1}` : 'Tablette', monthly: e.amount, period: fmtPeriodEntry(e), total: e.amount * countM(e.months, e.full) })),
+      ...sim.pcs.filter(e => e.amount > 0).map((e, i) => ({ label: sim.pcs.length > 1 ? `PC ${i+1}` : 'PC', monthly: e.amount, period: fmtPeriodEntry(e), total: e.amount * countM(e.months, e.full) })),
+      ...(aboGSMTotal > 0 ? [{ label: 'Abonnement GSM', monthly: 15, period: fmtPeriod(sim.aboGSMM, sim.aboGSMFull !== false), total: aboGSMTotal }] : []),
+      ...(internetTotal > 0 ? [{ label: 'Internet@Home', monthly: sim.internet, period: fmtPeriod(sim.internetM, sim.internetFull), total: internetTotal }] : []),
+      ...(dentaliaTotal > 0 ? [{ label: 'Dentalia', monthly: sim.dentaliaNb * 5, period: fmtPeriod(sim.dentaliaM, sim.dentaliaFull !== false), total: dentaliaTotal }] : []),
+      ...(medicaliaTotal > 0 ? [{ label: 'Medicalia', monthly: sim.medicalia, period: fmtPeriod(sim.medicaliaM, sim.medicaliaFull), total: medicaliaTotal }] : []),
+      ...(epargneTotal > 0 ? [{ label: 'Épargne pension', monthly: null, period: 'Forfait annuel', total: epargneTotal }] : []),
+      ...(cashTotal > 0 ? [{ label: 'Cash', monthly: null, period: 'Forfait annuel', total: cashTotal }] : []),
+      ...(joursFIPTotal > 0 ? [{ label: 'Jours FIP', monthly: null, period: `${sim.joursFIP} jour(s)`, total: joursFIPTotal }] : []),
+      ...(officeTotal > 0 ? [{ label: 'Office@Home', monthly: null, period: 'Forfait annuel', total: officeTotal }] : []),
+    ]
+  };
+}
+
+// ================================================================
+// BAREMES BRUT-NET 2024
+// ================================================================
+const ONSS_RATE = 0.1307;
+
+function indemniteTeletravail(carto, eligible) {
+  if (!eligible) return 0;
+  return { 1:70,2:70,3:70,4:70,5:70,6:105,7:145,8:175,9:175,10:260 }[carto] || 70;
+}
+
+function cotisationSpeciale(brut) {
+  if (brut <= 0) return 0;
+  if (brut <= 1095.09) return 0;
+  if (brut <= 1945.38) return 9.30;
+  if (brut <= 2190.18) return 80.15;
+  if (brut <= 6038.82) return 27.90;
+  return 60.94;
+}
+
+function fraisPro(ann) { return Math.min(ann * 0.30, 5750); }
+
+function impotBareme(rani) {
+  // Barèmes 2026 — SPF Finance
+  if (rani <= 0) return 0;
+  const t = [[16710, 0.2675],[12790, 0.4280],[21550, 0.4815],[Infinity, 0.5350]];
+  let imp = 0, r = rani;
+  for (const [p, tx] of t) { if (r <= 0) break; const s = Math.min(r, p); imp += s * tx; r -= s; }
+  return imp;
+}
+
+function tauxPP13(ann) {
+  if (ann <= 10115) return 0;
+  if (ann <= 12930) return 0.2322;
+  if (ann <= 16460) return 0.2523;
+  if (ann <= 19740) return 0.3028;
+  if (ann <= 22330) return 0.3533;
+  if (ann <= 24940) return 0.3836;
+  if (ann <= 30150) return 0.4038;
+  if (ann <= 32800) return 0.4341;
+  if (ann <= 43440) return 0.4644;
+  if (ann <= 56730) return 0.5148;
+  return 0.535;
+}
+
+// ================================================================
+// BONUS À L'EMPLOI — sources : ONSS / Partena Professional
+// Seuils non-manuels valables à partir du 1er mars 2026
+// ================================================================
+function bonusSocial(brut) {
+  const S = brut;
+  // Volet B (très bas salaires)
+  let pB = 0;
+  if (S <= 2218.73) pB = 165.87;
+  else if (S <= 2833.36) pB = 165.87 - 0.2699 * (S - 2218.73);
+  // Volet A (bas salaires)
+  let pA = 0;
+  if (S <= 2833.36) pA = 123.00;
+  else if (S <= 3336.98) pA = 123.00 - 0.2442 * (S - 2833.36);
+  // Écrêtement : bonus total ne peut excéder les cotisations ONSS dues
+  const cotisONSS = brut * ONSS_RATE;
+  const total = Math.min(pA + pB, cotisONSS);
+  // Répartition proportionnelle si écrêtement
+  const raw = pA + pB;
+  const ratio = raw > 0 ? total / raw : 1;
+  return { pA: pA * ratio, pB: pB * ratio, total };
+}
+
+function bonusFiscal(brut) {
+  // Bonus fiscal = 33,14% × volet A + 52,54% × volet B
+  // Plafonné à 765€/an = 63,75€/mois (EI 2026)
+  const bs = bonusSocial(brut);
+  const fiscal = bs.pA * 0.3314 + bs.pB * 0.5254;
+  return Math.min(fiscal, 63.75); // plafond mensuel 765/12
+}
+
+function calcBrutNet() {
+  const p = getProfileData();
+  const sim = activeSim();
+  // Participation salariale : moyenne pondérée au prorata des mois sur l'année
+  // Ex: 50€ × 3 mois + 50€ × 9 mois = 600€ annuel → 50€/mois (et non 100€/mois)
+  const partSalMensuel = sim ? (() => {
+    const annuel1 = sim.partSal  * sim.partSalMonths;
+    const annuel2 = sim.hasPartSal2 ? sim.partSal2 * sim.partSal2Months : 0;
+    return (annuel1 + annuel2) / 12;
+  })() : 0;
+
+  // ATN auto from FIP
+  const hasGSM    = sim ? (sim.sm_on  && sim.smartphones.some(e => e.amount > 0)) : false;
+  const hasTab    = sim ? (sim.tab_on && sim.tablets.some(e => e.amount > 0)) : false;
+  const hasPC     = sim ? (sim.pc_on  && sim.pcs.some(e => e.amount > 0)) : false;
+  const hasAboGSM = sim ? (sim.aboGSMOui) : false;
+  const atnGSM = hasGSM ? 3 : 0;
+  const atnTab = hasTab ? 3 : 0;
+  const atnPC = hasPC ? 6 : 0;
+  const atnAboGSM = hasAboGSM ? 9 : 0;
+  const atnMulti = atnGSM + atnTab + atnPC + atnAboGSM;
+  const atnTotal = p.atnVoiture + atnMulti;
+
+  const teleTravail = indemniteTeletravail(p.carto, p.teletravailOui);
+  const brutApresPartSal = p.brutPro - partSalMensuel;
+  // Bonus à l'emploi social (réduction ONSS pour bas revenus)
+  const bs = bonusSocial(brutApresPartSal);
+  const cotisONSS = brutApresPartSal * ONSS_RATE - bs.total; // ONSS net après bonus social
+  const cotisONSSBrute = brutApresPartSal * ONSS_RATE;       // pour affichage
+  const imposableMensuel = brutApresPartSal - cotisONSS + atnTotal;
+  const cotSpec = cotisationSpeciale(brutApresPartSal);
+  const imposableAnnuel = Math.floor(imposableMensuel / 15) * 15 * 12;
+  const raniAnnuel = imposableAnnuel - fraisPro(imposableAnnuel);
+
+  let ppMensuel = 0;
+  // Quotité exemptée 2026 = 10.570€ (SPF Finance)
+  const REDUCTION_BASE = impotBareme(10570); // 2827.48€
+
+  // Réductions enfants 2026 — SPF Finance (Annexe 3) — s'appliquent à toutes les situations
+  const redsEnf = [0, 624, 1656, 4404, 7620, 11100, 14592, 18120, 21996,
+    21996 + 3864,      // 9 enfants
+    21996 + 2 * 3864]; // 10 enfants
+  const redEnf = p.enfants > 0 ? (redsEnf[Math.min(p.enfants, 10)] || 0) : 0;
+
+  if (p.situation === 'marie_sans_revenu') {
+    // Quotient conjugal : 30% du RANI du bénéficiaire, plafonné à 13.060€
+    const quotient = Math.min(raniAnnuel * 0.30, 13060);
+    // Impôt sur la part principale après déduction du quotient, moins réduction de base et enfants
+    const impNetM = Math.max(0, impotBareme(raniAnnuel - quotient) - REDUCTION_BASE - redEnf);
+    // Impôt sur la part attribuée au conjoint, moins réduction de base
+    const impConj = Math.max(0, impotBareme(quotient) - REDUCTION_BASE);
+    ppMensuel = (impNetM + impConj) / 12;
+  } else {
+    ppMensuel = Math.max(0, impotBareme(raniAnnuel) - REDUCTION_BASE - redEnf) / 12;
+  }
+
+  // Bonus fiscal à l'emploi (réduction PP pour bas revenus)
+  const bFiscal = bonusFiscal(brutApresPartSal);
+  const netFinal = imposableMensuel - ppMensuel - cotSpec - atnTotal + teleTravail + bFiscal;
+  const netAnnuel = netFinal * 12;
+
+  // PFA — ~estimation
+  // Solde FIP → Brut PFA (solde / 1.17) → Net (brut - 13.07% ONSS - 45% PP)
+  const pfaSolde = sim ? Math.max(0, calcFIPSim(sim).solde) : 0;
+  const pfaBrut  = pfaSolde / 1.17;
+  const pfaONSS  = pfaBrut * ONSS_RATE;
+  const pfaPP    = pfaBrut * 0.45;
+  const pfaNet   = pfaBrut - pfaONSS - pfaPP;
+
+  return {
+    brutPro: p.brutPro, partSalMensuel, brutApresPartSal,
+    cotisONSS, cotisONSSBrute, bonusSocial: bs.total, bFiscal, atnTotal, atnVoiture: p.atnVoiture, atnMulti,
+    imposableMensuel, ppMensuel, cotSpec,
+    netFinal, netAnnuel, teleTravail,
+    pfaSolde, pfaBrut, pfaONSS, pfaPP, pfaNet,
+    hasGSM, hasTab, hasPC, hasAboGSM, atnAboGSM,
+    carto: p.carto, situation: p.situation,
+    onssOui: p.onssOui,
+  };
+}
+
+// ================================================================
+// RENDER FIP
+// ================================================================
+function renderFIP() {
+  renderSimTabs();
+  if (!activeSimId || !simulations.length) {
+    document.getElementById('fip-inputs').innerHTML = `<div class="card"><div class="card-body" style="text-align:center;padding:40px;color:var(--muted)"><div style="font-size:2.5rem">📋</div><p style="margin-top:10px">${t('addSim')}</p></div></div>`;
+    document.getElementById('fip-results').innerHTML = '';
+    document.getElementById('compareSection').style.display = 'none';
+    document.getElementById('compareBar').style.display = 'none';
+    return;
+  }
+
+  const sim = activeSim();
+  if (!sim) return;
+
+  renderFIPInputs(sim);
+  renderFIPResults(sim);
+  renderCompare();
+}
+
+function renderSimTabs() {
+  let html = '';
+  simulations.forEach(s => {
+    html += `<div class="sim-tab ${s.id === activeSimId ? 'active' : ''}" onclick="activeSimId=${s.id};renderFIP();renderBrutNet()">
+      <input class="sim-name" type="text" value="${s.name.replace(/"/g,'&quot;')}"
+        onclick="event.stopPropagation()"
+        onchange="renameSim(${s.id},this.value)"
+        onblur="renameSim(${s.id},this.value)">
+      <span class="reset-s" title="Remettre à zéro" onclick="event.stopPropagation();if(confirm('Remettre tous les champs à zéro ?'))resetSim(${s.id})">↺</span>
+      <span class="close-s" onclick="event.stopPropagation();removeSimulation(${s.id})">✕</span>
+    </div>`;
+  });
+  html += `<button class="add-sim-btn" onclick="addSimulation()">+ ${t('addSim')}</button>`;
+  document.getElementById('simTabs').innerHTML = html;
+  document.getElementById('compareBar').style.display = simulations.length >= 2 ? 'flex' : 'none';
+}
+
+const MONTHS_FR = ['Jan','Fév','Mar','Avr','Mai','Jun','Jul','Aoû','Sep','Oct','Nov','Déc'];
+const MONTHS_EN = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+function mNames() { return lang === 'fr' ? MONTHS_FR : MONTHS_EN; }
+
+function monthPicker(simId, mKey, mArr, customCb) {
+  const cb = customCb
+    ? (i) => customCb.replace("IDX", i).replace("VAL", !mArr[i])
+    : (i) => `toggleMonth(${simId},'${mKey}',${i})`;
+  return '<div class="month-picker">' + mNames().map((m, i) =>
+    `<button type="button" class="mp-btn ${mArr[i] ? 'mp-on' : ''}" onclick="${cb(i)}">${m}</button>`
+  ).join('') + '</div>';
+}
+
+function monthlyRow(sim, key, label, hint='') {
+  const fKey = key + 'Full';
+  const mKey = key + 'M';
+  const full = sim[fKey] !== false;
+  const mArr = sim[mKey] || noMonths();
+  const cnt = countM(mArr, full);
+  const total = sim[key] * cnt;
+  return `<div class="field">
+    <label>${label}</label>
+    ${hint ? `<div class="hint" style="margin-bottom:5px">${hint}</div>` : ''}
+    <div style="display:flex;gap:10px;align-items:flex-start">
+      <div style="flex:0 0 120px"><div class="input-wrap"><input type="number" value="${sim[key]}" min="0" onchange="upd(${sim.id},'${key}',+this.value)"><span class="unit">€</span></div></div>
+      <div style="flex:1">
+        <div class="full-partial">
+          <button type="button" class="fp-btn ${full ? 'fp-on' : ''}" onclick="setFullYear(${sim.id},'${fKey}',true)">${t('fullYear')}</button>
+          <button type="button" class="fp-btn ${!full ? 'fp-on' : ''}" onclick="setFullYear(${sim.id},'${fKey}',false)">${t('someMonths')}</button>
+        </div>
+        ${!full ? monthPicker(sim.id, mKey, mArr) : ''}
+        <div class="hint">${cnt} ${t('months')} × ${fmt(sim[key])} = <strong>${fmt(total)}</strong></div>
+      </div>
+    </div>
+  </div>`;
+}
+
+function multiEntry(sim, key, label, icon='') {
+  const entries = sim[key] || [];
+  const showATN = key !== 'velos';
+  const atnVal = key==='smartphones'?'3':key==='tablets'?'3':'6';
+  // Count total months across all entries to warn if > 12
+  const totalMonths = entries.reduce((s, e) => s + countM(e.months, e.full), 0);
+  let html = `<div class="field"><label>${label}${showATN ? ` <span class="atn-badge">ATN auto ${atnVal}€/mois</span>` : ''}</label>`;
+  if (totalMonths > 12) html += `<div class="hint" style="color:#c0392b;margin-bottom:6px">⚠️ Total : ${totalMonths} mois sélectionnés (max 12)</div>`;
+  entries.forEach((e, idx) => {
+    const full = e.full !== false;
+    const cnt = countM(e.months, full);
+    const total = e.amount * cnt;
+    html += `<div class="entry-box">
+      ${entries.length > 1 ? `<div class="entry-lbl">${icon} ${idx+1}</div>` : ''}
+      ${entries.length > 1 ? `<button class="remove-btn" onclick="removeEntry(${sim.id},'${key}',${e.id})">✕</button>` : ''}
+      <div style="display:flex;gap:10px;align-items:flex-start">
+        <div style="flex:0 0 120px">
+          <label style="font-size:10px">${lang==='fr'?'Montant/mois':'Amount/month'}</label>
+          <div class="input-wrap" style="margin-top:3px"><input type="number" value="${e.amount}" min="0" onchange="updEntry(${sim.id},'${key}',${e.id},'amount',+this.value)"><span class="unit">€</span></div>
+        </div>
+        <div style="flex:1">
+          <div class="full-partial">
+            <button type="button" class="fp-btn ${full ? 'fp-on' : ''}" onclick="updEntry(${sim.id},'${key}',${e.id},'full',true)">${t('fullYear')}</button>
+            <button type="button" class="fp-btn ${!full ? 'fp-on' : ''}" onclick="updEntry(${sim.id},'${key}',${e.id},'full',false)">${t('someMonths')}</button>
+          </div>
+          ${!full ? monthPicker(sim.id, 'dummy', e.months, `updEntryMonth(${sim.id},'${key}',${e.id},IDX,VAL)`) : ''}
+          <div class="hint">${cnt} ${t('months')} × ${fmt(e.amount)} = <strong>${fmt(total)}</strong></div>
+        </div>
+      </div>
+    </div>`;
+  });
+  html += `<button class="add-entry-btn" onclick="addEntry(${sim.id},'${key}')">+ ${lang==='fr'?'Ajouter':'Add'}</button></div>`;
+  return html;
+}
+
+function renderFIPInputs(sim) {
+  const { brut100, regime } = getProfileData();
+  const pfaUnit = brut100 * regime * COEFF / 12;
+  const pfaTotal = pfaUnit * sim.pfaMonths;
+  const valeurJour = brut100 * regime * 3 / 13 / 5 * COEFF;
+  const partSalBudget = sim.partSal * sim.partSalMonths * COEFF;
+  const partSal2Budget = sim.partSal2 * sim.partSal2Months * COEFF;
+  const budgetConge = sim.joursConge * valeurJour;
+  const totalBudget = pfaTotal + partSalBudget + partSal2Budget + budgetConge;
+
+  document.getElementById('fip-inputs').innerHTML = `
+    <!-- BUDGET -->
+    <div class="card">
+      <div class="card-header"><div class="card-icon">🏦</div><h2>${t('cardBudget')}</h2></div>
+      <div class="card-body">
+        <div class="field">
+          <label>${t('pfaMonthsLabel')}<br><span style="font-size:11px;font-weight:400;opacity:0.65">Introduire le nombre de mois prestés sur l'année en cours</span></label>
+          <select class="input-select" onchange="upd(${sim.id},'pfaMonths',+this.value)" style="max-width:180px">
+            <option value="1" ${sim.pfaMonths===1 ? 'selected' : ''}>1 mois</option><option value="2" ${sim.pfaMonths===2 ? 'selected' : ''}>2 mois</option><option value="3" ${sim.pfaMonths===3 ? 'selected' : ''}>3 mois</option><option value="4" ${sim.pfaMonths===4 ? 'selected' : ''}>4 mois</option><option value="5" ${sim.pfaMonths===5 ? 'selected' : ''}>5 mois</option><option value="6" ${sim.pfaMonths===6 ? 'selected' : ''}>6 mois</option><option value="7" ${sim.pfaMonths===7 ? 'selected' : ''}>7 mois</option><option value="8" ${sim.pfaMonths===8 ? 'selected' : ''}>8 mois</option><option value="9" ${sim.pfaMonths===9 ? 'selected' : ''}>9 mois</option><option value="10" ${sim.pfaMonths===10 ? 'selected' : ''}>10 mois</option><option value="11" ${sim.pfaMonths===11 ? 'selected' : ''}>11 mois</option><option value="12" ${sim.pfaMonths===12 ? 'selected' : ''}>12 mois</option>
+          </select>
+        </div>
+        <div class="field-row3" style="align-items:end">
+          <div class="field" style="margin:0">
+            <label>${t('lPFA')}</label>
+            <div class="auto-value">${fmt(pfaTotal)}</div>
+            <div class="auto-label">${t('lPFAFormule')} / 12 × ${sim.pfaMonths}</div>
+          </div>
+          <div class="field" style="margin:0">
+            <label>${t('lJourConge')}</label>
+            <div class="auto-value">${fmt(valeurJour)}</div>
+            <div class="auto-label">${t('lJourFormule')}</div>
+          </div>
+          <div class="field" style="margin:0">
+            <label>${t('lTotalBudget')}</label>
+            <div class="auto-value" style="font-size:15px;font-weight:700;color:var(--primary)">${fmt(totalBudget)}</div>
+            <div class="auto-label">${t('lTotalFormule')}</div>
+          </div>
+        </div>
+        <div style="margin-top:12px">
+          <div class="field">
+            <label>${t('lPartSal')}</label>
+            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+              <select class="input-select" onchange="upd(${sim.id},'partSal',+this.value)" style="max-width:140px">
+                <option value="0" ${sim.partSal===0 ? 'selected' : ''}>0 €</option><option value="50" ${sim.partSal===50 ? 'selected' : ''}>50 €</option><option value="100" ${sim.partSal===100 ? 'selected' : ''}>100 €</option><option value="150" ${sim.partSal===150 ? 'selected' : ''}>150 €</option><option value="200" ${sim.partSal===200 ? 'selected' : ''}>200 €</option><option value="250" ${sim.partSal===250 ? 'selected' : ''}>250 €</option><option value="300" ${sim.partSal===300 ? 'selected' : ''}>300 €</option><option value="350" ${sim.partSal===350 ? 'selected' : ''}>350 €</option><option value="400" ${sim.partSal===400 ? 'selected' : ''}>400 €</option><option value="450" ${sim.partSal===450 ? 'selected' : ''}>450 €</option><option value="500" ${sim.partSal===500 ? 'selected' : ''}>500 €</option><option value="550" ${sim.partSal===550 ? 'selected' : ''}>550 €</option><option value="600" ${sim.partSal===600 ? 'selected' : ''}>600 €</option>
+              </select>
+              <span style="font-size:13px;color:var(--muted)">sur</span>
+              <select class="input-select" onchange="upd(${sim.id},'partSalMonths',+this.value)" style="max-width:120px">
+                <option value="1" ${sim.partSalMonths===1 ? 'selected' : ''}>1 mois</option><option value="2" ${sim.partSalMonths===2 ? 'selected' : ''}>2 mois</option><option value="3" ${sim.partSalMonths===3 ? 'selected' : ''}>3 mois</option><option value="4" ${sim.partSalMonths===4 ? 'selected' : ''}>4 mois</option><option value="5" ${sim.partSalMonths===5 ? 'selected' : ''}>5 mois</option><option value="6" ${sim.partSalMonths===6 ? 'selected' : ''}>6 mois</option><option value="7" ${sim.partSalMonths===7 ? 'selected' : ''}>7 mois</option><option value="8" ${sim.partSalMonths===8 ? 'selected' : ''}>8 mois</option><option value="9" ${sim.partSalMonths===9 ? 'selected' : ''}>9 mois</option><option value="10" ${sim.partSalMonths===10 ? 'selected' : ''}>10 mois</option><option value="11" ${sim.partSalMonths===11 ? 'selected' : ''}>11 mois</option><option value="12" ${sim.partSalMonths===12 ? 'selected' : ''}>12 mois</option>
+              </select>
+            </div>
+            <div class="hint" style="margin-top:5px">${t('hPartSal')}</div>
+            <div class="hint"><strong>${fmt(sim.partSal)} × 1,17 × ${sim.partSalMonths} mois = ${fmt(partSalBudget)}</strong></div>
+            <div class="hint" style="margin-top:6px;padding:6px 10px;background:#FFF8E1;border-left:3px solid #F0A500;border-radius:0 6px 6px 0;color:#7A5800">
+              ⚠️ Si vous êtes après le <strong>15 du mois</strong>, ne comptez pas le mois en cours dans le nombre de mois.
+            </div>
+          </div>
+
+          <!-- Participation salariale 2 — optionnelle -->
+          ${sim.hasPartSal2 ? `
+          <div class="field">
+            <label style="display:flex;justify-content:space-between;align-items:center">
+              <span>${t('lPartSal')} <span style="background:var(--accent-light);color:var(--accent);border-radius:4px;padding:1px 6px;font-size:10px;font-weight:600">2</span></span>
+              <button type="button" onclick="upd(${sim.id},'hasPartSal2',false);upd(${sim.id},'partSal2',0)" style="background:none;border:none;cursor:pointer;font-size:16px;opacity:0.4;line-height:1" title="Supprimer">×</button>
+            </label>
+            <select class="input-select" onchange="upd(${sim.id},'partSal2',+this.value)" style="max-width:180px;margin-bottom:6px">
+              <option value="0" ${sim.partSal2===0 ? 'selected' : ''}>0 €</option><option value="50" ${sim.partSal2===50 ? 'selected' : ''}>50 €</option><option value="100" ${sim.partSal2===100 ? 'selected' : ''}>100 €</option><option value="150" ${sim.partSal2===150 ? 'selected' : ''}>150 €</option><option value="200" ${sim.partSal2===200 ? 'selected' : ''}>200 €</option><option value="250" ${sim.partSal2===250 ? 'selected' : ''}>250 €</option><option value="300" ${sim.partSal2===300 ? 'selected' : ''}>300 €</option><option value="350" ${sim.partSal2===350 ? 'selected' : ''}>350 €</option><option value="400" ${sim.partSal2===400 ? 'selected' : ''}>400 €</option><option value="450" ${sim.partSal2===450 ? 'selected' : ''}>450 €</option><option value="500" ${sim.partSal2===500 ? 'selected' : ''}>500 €</option><option value="550" ${sim.partSal2===550 ? 'selected' : ''}>550 €</option><option value="600" ${sim.partSal2===600 ? 'selected' : ''}>600 €</option>
+            </select>
+            <div style="display:flex;align-items:center;gap:10px;margin-top:6px">
+              <label style="font-size:11px;opacity:0.7;white-space:nowrap">Nombre de mois :</label>
+              <input type="number" min="1" max="12" value="${sim.partSal2Months}" style="width:60px;padding:4px 8px;border:1px solid var(--border);border-radius:6px;font-size:13px" onchange="upd(${sim.id},'partSal2Months',Math.min(12,Math.max(1,+this.value)))">
+            </div>
+            <div class="hint"><strong>${fmt(sim.partSal2)} × 1,17 × ${sim.partSal2Months} mois = ${fmt(sim.partSal2 * sim.partSal2Months * 1.17)}</strong></div>
+            <div class="hint" style="margin-top:6px;padding:6px 10px;background:#FFF8E1;border-left:3px solid #F0A500;border-radius:0 6px 6px 0;color:#7A5800">
+              ⚠️ Si vous êtes après le <strong>15 du mois</strong>, ne comptez pas le mois en cours dans le nombre de mois.
+            </div>
+          </div>
+          ` : `
+          <button type="button" class="add-entry-btn" onclick="upd(${sim.id},'hasPartSal2',true)">+ ${lang==='fr'?'Ajouter une 2ème participation salariale':'Add a 2nd salary contribution'}</button>
+          `}
+
+          <div class="field" style="margin:0">
+            <label>${t('lJoursConge')}</label>
+            <div class="input-wrap" style="max-width:160px"><input type="number" value="${sim.joursConge}" min="0" step="0.5" oninput="upd(${sim.id},'joursConge',+this.value)"><span class="unit">j</span></div>
+            <div class="hint">1 jour = ${fmt(valeurJour)}&ensp;·&ensp;½ jour = ${fmt(valeurJour/2)} → Total : <strong>${fmt(budgetConge)}</strong></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── SÉLECTEUR D'AVANTAGES ── -->
+
+    <!-- MOBILITE -->
+    <div class="section-lbl">🚗 ${t('cardMobilite')}</div>
+    <div class="card"><div class="card-body">
+
+      <!-- Grille de sélection -->
+      <div class="benefit-grid">
+        <label class="benefit-chip ${sim.voiture_on ? 'on' : ''}" onclick="upd(${sim.id},'voiture_on',!${sim.voiture_on})">
+          <span class="chip-icon">🚗</span><span>Voiture FIP</span><span class="chip-check"></span>
+        </label>
+        <label class="benefit-chip ${sim.carbu_on ? 'on' : ''}" onclick="upd(${sim.id},'carbu_on',!${sim.carbu_on})">
+          <span class="chip-icon">⛽</span><span>${t('lCarburant')}</span><span class="chip-check"></span>
+        </label>
+        <label class="benefit-chip ${sim.elec_on ? 'on' : ''}" onclick="upd(${sim.id},'elec_on',!${sim.elec_on})">
+          <span class="chip-icon">⚡</span><span>${t('lElec')}</span><span class="chip-check"></span>
+        </label>
+        <label class="benefit-chip ${sim.borneOui ? 'on' : ''}" onclick="upd(${sim.id},'borneOui',!${sim.borneOui})">
+          <span class="chip-icon">🔌</span><span>${t('lBorne')}</span><span class="chip-check"></span>
+        </label>
+        <label class="benefit-chip ${sim.velo_on ? 'on' : ''}" onclick="upd(${sim.id},'velo_on',!${sim.velo_on})">
+          <span class="chip-icon">🚲</span><span>${t('lVelo')}</span><span class="chip-check"></span>
+        </label>
+        <label class="benefit-chip ${sim.parking ? 'on' : ''}" onclick="upd(${sim.id},'parking',!${sim.parking})">
+          <span class="chip-icon">🅿️</span><span>${t('lParking')}</span><span class="chip-check"></span>
+        </label>
+        <label class="benefit-chip ${sim.parkingTamaris_on ? 'on' : ''}" onclick="upd(${sim.id},'parkingTamaris_on',!${sim.parkingTamaris_on})">
+          <span class="chip-icon">🏢</span><span>${t('lParkingTamaris')}</span><span class="chip-check"></span>
+        </label>
+      </div>
+
+      <!-- Détails voiture -->
+      ${sim.voiture_on ? `
+      <div class="benefit-detail">
+        <div class="benefit-detail-title">🚗 Voiture FIP</div>
+        ${renderCars(sim)}
+        <div class="toggle-row" style="margin-top:8px">
+          <div><div class="toggle-label" style="font-size:13px">${lang==='fr'?'Changer de voiture en cours d\'année ?':'Changing car during the year?'}</div></div>
+          <label class="toggle"><input type="checkbox" ${sim.multiCar ? 'checked' : ''} onchange="toggleCar(${sim.id},this.checked)"><span class="toggle-slider"></span></label>
+        </div>
+
+      </div>` : ''}
+
+
+      <!-- Détail Parking Tamaris -->
+      ${sim.parkingTamaris_on ? `
+      <div class="benefit-detail">
+        <div class="benefit-detail-title">🏢 ${t('lParkingTamaris')}</div>
+        <div class="field" style="max-width:280px">
+          <label>Nombre d'utilisations sur l'année</label>
+          <div class="hint" style="margin-bottom:6px">Demi-journées acceptées (ex: 0.5, 1, 1.5…). Chaque utilisation = <strong>2,50 €</strong>.</div>
+          <div class="input-wrap">
+            <input type="number" value="${sim.parkingTamarisNb}" min="0" step="0.5"
+              onchange="upd(${sim.id},'parkingTamarisNb',+this.value)">
+            <span class="unit">× 2,50 €</span>
+          </div>
+          ${sim.parkingTamarisNb > 0 ? `<div class="hint" style="margin-top:5px">${sim.parkingTamarisNb} × 2,50 € = <strong>${fmt(sim.parkingTamarisNb * 2.5)}</strong></div>` : ''}
+        </div>
+      </div>` : ''}
+
+      <!-- Détail Carburant -->
+      ${sim.carbu_on ? `
+      <div class="benefit-detail">
+        <div class="benefit-detail-title">⛽ ${t('lCarburant')}</div>
+        <div style="display:flex;gap:8px;align-items:flex-start">
+          <div style="flex:0 0 110px">
+            <div class="input-wrap"><input type="number" value="${sim.carbu}" min="0" onchange="upd(${sim.id},'carbu',+this.value)"><span class="unit">€</span></div>
+            ${sim.carbu > 0 ? `<div class="hint">→ ${fmt(sim.carbu/0.7)}/mois</div>` : ''}
+          </div>
+          <div style="flex:1">
+            <div class="full-partial">
+              <button type="button" class="fp-btn ${sim.carbuFull ? 'fp-on' : ''}" onclick="setFullYear(${sim.id},'carbuFull',true)">${t('fullYear')}</button>
+              <button type="button" class="fp-btn ${!sim.carbuFull ? 'fp-on' : ''}" onclick="setFullYear(${sim.id},'carbuFull',false)">${t('someMonths')}</button>
+            </div>
+            ${!sim.carbuFull ? monthPicker(sim.id, 'carbuM', sim.carbuM) : ''}
+            <div class="hint">${countM(sim.carbuM, sim.carbuFull)} mois → <strong>${fmt(sim.carbu > 0 ? (sim.carbu/0.7)*countM(sim.carbuM,sim.carbuFull) : 0)}</strong></div>
+          </div>
+        </div>
+      </div>` : ''}
+
+      <!-- Détail Elec -->
+      ${sim.elec_on ? `
+      <div class="benefit-detail">
+        <div class="benefit-detail-title">⚡ ${t('lElec')}</div>
+        ${monthlyRow(sim, 'elec', '')}
+      </div>` : ''}
+
+      <!-- Détail Borne -->
+      ${sim.borneOui ? `
+      <div class="benefit-detail">
+        <div class="benefit-detail-title">🔌 ${t('lBorne')}</div>
+        <div class="full-partial">
+          <button type="button" class="fp-btn ${sim.borneFull !== false ? 'fp-on' : ''}" onclick="setFullYear(${sim.id},'borneFull',true)">${t('fullYear')}</button>
+          <button type="button" class="fp-btn ${sim.borneFull === false ? 'fp-on' : ''}" onclick="setFullYear(${sim.id},'borneFull',false)">${t('someMonths')}</button>
+        </div>
+        ${sim.borneFull === false ? monthPicker(sim.id, 'borneM', sim.borneM) : ''}
+        <div class="hint">65 €/mois × ${countM(sim.borneM, sim.borneFull !== false)} mois = <strong>${fmt(65 * countM(sim.borneM, sim.borneFull !== false))}</strong></div>
+      </div>` : ''}
+
+      <!-- Détail Vélo -->
+      ${sim.velo_on ? `
+      <div class="benefit-detail">
+        <div class="benefit-detail-title">🚲 ${t('lVelo')}</div>
+        ${multiEntry(sim, 'velos', '', '🚲')}
+      </div>` : ''}
+
+    </div></div>
+
+    <!-- MULTIMEDIA -->
+    <div class="section-lbl">📱 ${t('cardMultimedia')}</div>
+    <div class="card"><div class="card-body">
+      <div class="alert alert-warn">${t('alertATNAuto')}</div>
+
+      <!-- Grille de sélection -->
+      <div class="benefit-grid">
+        <label class="benefit-chip ${sim.sm_on ? 'on' : ''}" onclick="upd(${sim.id},'sm_on',!${sim.sm_on})">
+          <span class="chip-icon">📱</span><span>${t('lSmartphone')}</span><span class="chip-check"></span>
+        </label>
+        <label class="benefit-chip ${sim.tab_on ? 'on' : ''}" onclick="upd(${sim.id},'tab_on',!${sim.tab_on})">
+          <span class="chip-icon">📲</span><span>${t('lTablette')}</span><span class="chip-check"></span>
+        </label>
+        <label class="benefit-chip ${sim.pc_on ? 'on' : ''}" onclick="upd(${sim.id},'pc_on',!${sim.pc_on})">
+          <span class="chip-icon">💻</span><span>${t('lPC')}</span><span class="chip-check"></span>
+        </label>
+        <label class="benefit-chip ${sim.aboGSMOui ? 'on' : ''}" onclick="upd(${sim.id},'aboGSMOui',!${sim.aboGSMOui})">
+          <span class="chip-icon">📞</span><span>${t('lAboGSM')}</span><span class="chip-check"></span>
+        </label>
+        <label class="benefit-chip ${sim.internet_on ? 'on' : ''}" onclick="upd(${sim.id},'internet_on',!${sim.internet_on})">
+          <span class="chip-icon">🌐</span><span>${t('lInternet')}</span><span class="chip-check"></span>
+        </label>
+      </div>
+
+      ${sim.sm_on ? `<div class="benefit-detail"><div class="benefit-detail-title">📱 ${t('lSmartphone')}</div>${multiEntry(sim, 'smartphones', '', '📱')}</div>` : ''}
+      ${sim.tab_on ? `<div class="benefit-detail"><div class="benefit-detail-title">📲 ${t('lTablette')}</div>${multiEntry(sim, 'tablets', '', '📲')}</div>` : ''}
+      ${sim.pc_on ? `<div class="benefit-detail"><div class="benefit-detail-title">💻 ${t('lPC')}</div>${multiEntry(sim, 'pcs', '', '💻')}</div>` : ''}
+      ${sim.aboGSMOui ? `
+      <div class="benefit-detail">
+        <div class="benefit-detail-title">📞 ${t('lAboGSM')} <span class="atn-badge">ATN auto 9€/mois</span></div>
+        ${(() => {
+          const full = sim.aboGSMFull !== false;
+          const cnt = countM(sim.aboGSMM, full);
+          return `<div class="full-partial">
+            <button type="button" class="fp-btn ${full ? 'fp-on' : ''}" onclick="setFullYear(${sim.id},'aboGSMFull',true)">${t('fullYear')}</button>
+            <button type="button" class="fp-btn ${!full ? 'fp-on' : ''}" onclick="setFullYear(${sim.id},'aboGSMFull',false)">${t('someMonths')}</button>
+          </div>
+          ${!full ? monthPicker(sim.id, 'aboGSMM', sim.aboGSMM) : ''}
+          <div class="hint">${cnt} ${t('months')} × 15 € = <strong>${fmt(cnt * 15)}</strong></div>`;
+        })()}
+      </div>` : ''}
+      ${sim.internet_on ? `<div class="benefit-detail"><div class="benefit-detail-title">🌐 ${t('lInternet')}</div>${monthlyRow(sim, 'internet', '')}</div>` : ''}
+
+    </div></div>
+
+    <!-- SOCIAL -->
+    <div class="section-lbl">❤️ ${t('cardSocial')}</div>
+    <div class="card"><div class="card-body">
+
+      <!-- Grille de sélection -->
+      <div class="benefit-grid">
+        <label class="benefit-chip ${sim.dentalia_on ? 'on' : ''}" onclick="upd(${sim.id},'dentalia_on',!${sim.dentalia_on})">
+          <span class="chip-icon">🦷</span><span>${t('lDentalia')}</span><span class="chip-check"></span>
+        </label>
+        <label class="benefit-chip ${sim.medicalia_on ? 'on' : ''}" onclick="upd(${sim.id},'medicalia_on',!${sim.medicalia_on})">
+          <span class="chip-icon">🏥</span><span>${t('lMedicalia')}</span><span class="chip-check"></span>
+        </label>
+        <label class="benefit-chip ${sim.epargne_on ? 'on' : ''}" onclick="upd(${sim.id},'epargne_on',!${sim.epargne_on})">
+          <span class="chip-icon">💰</span><span>${t('lEpargne')}</span><span class="chip-check"></span>
+        </label>
+      </div>
+
+      ${sim.dentalia_on ? `
+      <div class="benefit-detail">
+        <div class="benefit-detail-title">🦷 ${t('lDentalia')}</div>
+        <div style="display:flex;gap:10px;align-items:flex-start">
+          <div style="flex:0 0 120px">
+            <label style="font-size:11px;font-weight:600;display:block;margin-bottom:4px">Nombre d'affiliés</label>
+            <div class="input-wrap"><input type="number" value="${sim.dentaliaNb}" min="0" max="20" onchange="upd(${sim.id},'dentaliaNb',+this.value)"></div>
+            <div class="hint">${t('hDentalia')}</div>
+          </div>
+          <div style="flex:1">
+            <div class="full-partial">
+              <button type="button" class="fp-btn ${sim.dentaliaFull !== false ? 'fp-on' : ''}" onclick="setFullYear(${sim.id},'dentaliaFull',true)">${t('fullYear')}</button>
+              <button type="button" class="fp-btn ${sim.dentaliaFull === false ? 'fp-on' : ''}" onclick="setFullYear(${sim.id},'dentaliaFull',false)">${t('someMonths')}</button>
+            </div>
+            ${sim.dentaliaFull === false ? monthPicker(sim.id, 'dentaliaM', sim.dentaliaM) : ''}
+            <div class="hint">${sim.dentaliaNb} × 5€ × ${countM(sim.dentaliaM, sim.dentaliaFull !== false)} mois = <strong>${fmt(sim.dentaliaNb * 5 * countM(sim.dentaliaM, sim.dentaliaFull !== false))}</strong></div>
+          </div>
+        </div>
+      </div>` : ''}
+
+      ${sim.medicalia_on ? `<div class="benefit-detail"><div class="benefit-detail-title">🏥 ${t('lMedicalia')}</div>${monthlyRow(sim, 'medicalia', '')}</div>` : ''}
+
+      ${sim.epargne_on ? `
+      <div class="benefit-detail">
+        <div class="benefit-detail-title">💰 ${t('lEpargne')}</div>
+        <div class="input-wrap" style="max-width:200px"><input type="number" value="${sim.epargne}" min="0" step="100" onchange="upd(${sim.id},'epargne',+this.value)"><span class="unit">€</span></div>
+        <div class="hint">${t('hEpargne')} → <strong>${fmt(sim.epargne * 1.0977)}</strong></div>
+      </div>` : ''}
+
+    </div></div>
+
+    <!-- CASH -->
+    <div class="section-lbl">💵 ${t('cardCash')}</div>
+    <div class="card"><div class="card-body">
+      <div class="benefit-grid">
+        <label class="benefit-chip ${sim.cash_on ? 'on' : ''}" onclick="upd(${sim.id},'cash_on',!${sim.cash_on})">
+          <span class="chip-icon">💵</span><span>${t('lCash')}</span><span class="chip-check"></span>
+        </label>
+      </div>
+      ${sim.cash_on ? `
+      <div class="benefit-detail">
+        <div class="benefit-detail-title">💵 ${t('lCash')}</div>
+        <div class="input-wrap" style="max-width:240px"><input type="number" value="${sim.cash}" min="0" step="100" onchange="upd(${sim.id},'cash',+this.value)"><span class="unit">€</span></div>
+        <div class="hint">${t('hCash')}</div>
+      </div>` : ''}
+    </div></div>
+
+    <!-- FLEX -->
+    <div class="section-lbl">🏠 ${t('cardFlex')}</div>
+    <div class="card"><div class="card-body">
+      <div class="benefit-grid">
+        <label class="benefit-chip ${sim.joursFIP > 0 ? 'on' : ''}" onclick="upd(${sim.id},'joursFIP', ${sim.joursFIP > 0 ? 0 : 1})">
+          <span class="chip-icon">📅</span><span>${t('lJoursFIP')}</span><span class="chip-check"></span>
+        </label>
+        <label class="benefit-chip ${sim.office_on ? 'on' : ''}" onclick="upd(${sim.id},'office_on',!${sim.office_on})">
+          <span class="chip-icon">🏠</span><span>${t('lOffice')}</span><span class="chip-check"></span>
+        </label>
+      </div>
+      ${sim.joursFIP > 0 ? `
+      <div class="benefit-detail">
+        <div class="benefit-detail-title">📅 ${t('lJoursFIP')} — 1 jour = ${fmt(valeurJour)}</div>
+        <div class="slider-wrap">
+          <input type="range" min="0" max="4" value="${Math.min(sim.joursFIP,4)}" oninput="upd(${sim.id},'joursFIP',+this.value)">
+          <span class="slider-value">${sim.joursFIP}</span>
+        </div>
+        <div class="hint">= <strong>${fmt(sim.joursFIP * valeurJour)}</strong></div>
+      </div>` : ''}
+      ${sim.office_on ? `
+      <div class="benefit-detail">
+        <div class="benefit-detail-title">🏠 ${t('lOffice')}</div>
+        <div class="input-wrap" style="max-width:200px"><input type="number" value="${sim.office}" min="0" step="50" onchange="upd(${sim.id},'office',+this.value)"><span class="unit">€</span></div>
+      </div>` : ''}
+    </div></div>
+
+    <button class="btn-next" onclick="switchMain('brutnet', document.querySelectorAll('.main-tab')[2])">
+      ${t('nextBN')}
+    </button>
+  `;
+}
+
+function renderCars(sim) {
+  let html = '';
+  sim.cars.forEach((car, idx) => {
+    const total = calcCarTotal(car.rent, car.start, car.end);
+    const months = carMonthsDisp(car.start, car.end);
+    html += `<div class="entry-box">
+      ${sim.multiCar ? `<div class="entry-lbl">🚗 ${t('car')} ${idx+1} <span style="font-size:11px;font-weight:400;color:var(--muted)">(${months} ${t('months')})</span></div>` : ''}
+      ${sim.multiCar && sim.cars.length > 1 ? `<button class="remove-btn" onclick="removeCar(${sim.id},${car.id})">✕</button>` : ''}
+      <div class="field-row" style="align-items:flex-end;gap:8px">
+        <div><label style="font-size:10px">${lang==='fr'?'Loyer mensuel':'Monthly rent'}</label>
+          <div class="input-wrap" style="margin-top:3px"><input type="number" value="${car.rent}" min="0" onchange="updCar(${sim.id},${car.id},'rent',+this.value)"><span class="unit">€</span></div>
+        </div>
+        <div class="field-row" style="gap:6px;margin-bottom:0">
+          <div><label style="font-size:10px">Début</label><div class="input-wrap" style="margin-top:3px"><input type="date" value="${car.start}" style="padding-right:10px" onchange="updCar(${sim.id},${car.id},'start',this.value)"></div></div>
+          <div><label style="font-size:10px">Fin</label><div class="input-wrap" style="margin-top:3px"><input type="date" value="${car.end}" style="padding-right:10px" onchange="updCar(${sim.id},${car.id},'end',this.value)"></div></div>
+        </div>
+      </div>
+      <div class="hint" style="margin-top:5px">${fmt(car.rent)} × ${months} ${t('months')} = <strong>${fmt(total)}</strong></div>
+      <div style="margin-top:8px;padding-top:8px;border-top:1px dashed var(--border)">
+        <label style="font-size:11px;font-weight:600;display:flex;align-items:center;gap:6px">
+          ATN <span class="atn-badge">Fiche de paie</span>
+        </label>
+        <div class="hint" style="margin:3px 0 6px">Montant mensuel visible sur votre fiche de paie ou à demander au gestionnaire mobilité. Pour une voiture électrique, mettez par défaut <strong>140 €</strong>.</div>
+        <div class="input-wrap" style="max-width:160px"><input type="number" value="${car.atn||0}" min="0" step="1" onchange="updCarAtn(${sim.id},${car.id},+this.value)"><span class="unit">€/mois</span></div>
+        ${months > 0 && (car.atn||0) > 0 ? `<div class="hint" style="margin-top:4px">${fmt(car.atn)} × ${months} mois = <strong>${fmt((car.atn||0)*months)}</strong></div>` : ''}
+      </div>
+    </div>`;
+  });
+  if (sim.multiCar) html += `<button class="add-entry-btn" onclick="addCar(${sim.id})">+ ${lang==='fr'?'Ajouter une voiture':'Add a car'}</button>`;
+  return html;
+}
+
+function renderFIPResults(sim) {
+  const c = calcFIPSim(sim);
+  const isPos = c.solde >= 0;
+  const pct = c.totalBudget > 0 ? Math.min(c.totalSpending / c.totalBudget * 100, 100) : 0;
+
+  let spendRows = c.spendingItems.map(i =>
+    `<tr><td>${i.label}</td><td></td><td></td><td>${fmt(i.total)}</td></tr>`
+  ).join('');
+
+  document.getElementById('fip-results').innerHTML = `
+    <div class="card">
+      <div class="card-header"><div class="card-icon">📈</div><h2>${t('rBudgetFIP')}</h2></div>
+      <div class="card-body">
+        <div class="result-big ${isPos ? 'pos' : 'neg'}">
+          <div class="r-label">${isPos ? t('rSoldeDisp') : t('rSoldeNeg')}</div>
+          <div class="r-amount">${fmt(c.solde)}</div>
+          <div class="r-sub">${t('rTotalBudget')}: ${fmt(c.totalBudget)}</div>
+        </div>
+        ${!isPos ? `<div class="alert alert-danger">⚠️ ${t('alertNeg')}</div>` : ''}
+        <div class="r-section">${t('rSources')}</div>
+        <div class="r-line"><span>${t('rPFA')}</span><span class="val pos">${fmt(c.pfaTotal)}</span></div>
+        <div class="r-line"><span>${t('rPartSal')}</span><span class="val pos">${fmt(c.partSalBudget)}</span></div>
+        ${c.partSal2Budget > 0 ? `<div class="r-line"><span>${t('rPartSal')} <span style="background:var(--accent-light);color:var(--accent);border-radius:3px;padding:0 4px;font-size:10px">2</span></span><span class="val pos">${fmt(c.partSal2Budget)}</span></div>` : ''}
+        <div class="r-line"><span>${t('rJours')}</span><span class="val pos">${fmt(c.budgetConge)}</span></div>
+        <div class="r-sep"></div>
+        <div class="r-section">${t('rDepenses')}</div>
+        <div class="r-line"><span>${t('rTotalDep')}</span><span class="val neg">${fmt(-c.totalSpending)}</span></div>
+        <div class="budget-bar"><div class="budget-bar-fill ${!isPos ? 'over' : ''}" style="width:${pct}%"></div></div>
+        <div class="budget-status ${isPos ? 'ok' : 'over'}">
+          <span>${isPos ? t('rSoldeDisp') : t('rSoldeNeg')}</span>
+          <strong>${fmt(c.solde)}</strong>
+        </div>
+        <div class="r-sep"></div>
+        <table class="breakdown">
+          <tr><th colspan="3">${t('breakdown')}</th><th style="text-align:right">Total</th></tr>
+          <tr class="sec-hd funding"><td colspan="4">${t('funding')}</td></tr>
+          <tr><td>${t('rPFA')}</td><td></td><td></td><td>${fmt(c.pfaTotal)}</td></tr>
+          ${c.partSalBudget > 0 ? `<tr><td>${t('rPartSal')}</td><td></td><td></td><td>${fmt(c.partSalBudget)}</td></tr>` : ''}
+          ${c.budgetConge > 0 ? `<tr><td>${t('rJours')}</td><td></td><td></td><td>${fmt(c.budgetConge)}</td></tr>` : ''}
+          <tr class="tot-row funding"><td colspan="3">${t('totalFunding')}</td><td>${fmt(c.totalBudget)}</td></tr>
+          <tr class="sec-hd spending"><td colspan="4">${t('spending')}</td></tr>
+          ${spendRows}
+          <tr class="tot-row spending"><td colspan="3">${t('totalSpending')}</td><td>${fmt(c.totalSpending)}</td></tr>
+        </table>
+
+      </div>
+    </div>
+  `;
+}
+
+function renderCompare() {
+  const section = document.getElementById('compareSection');
+  if (simulations.length < 2) { section.style.display = 'none'; return; }
+  section.style.display = 'block';
+  const calcs = simulations.map(s => ({ sim: s, calc: calcFIPSim(s) }));
+  const maxDiff = Math.max(...calcs.map(c => c.calc.solde));
+
+  const thCols = calcs.map(({ sim, calc }) => {
+    const isW = calc.solde === maxDiff;
+    return `<th class="sim-head ${isW ? 'winner-head' : ''}">${sim.name}${isW ? ' 🏆' : ''}</th>`;
+  }).join('');
+
+  const rows = [
+    ['rPFA', c => c.pfaTotal],
+    ['rPartSal', c => c.partSalBudget],
+    ['rJours', c => c.budgetConge],
+  ].map(([key, fn]) => {
+    const vals = calcs.map(({ calc }) => fn(calc));
+    const maxV = Math.max(...vals);
+    return `<tr><td>${t(key)}</td>${vals.map(v => `<td class="num ${v === maxV && v > 0 ? 'winner-val' : ''}">${fmt(v)}</td>`).join('')}</tr>`;
+  }).join('');
+
+  const totFund = calcs.map(({ calc }) => {
+    const mx = Math.max(...calcs.map(c => c.calc.totalBudget));
+    return `<td class="num ${calc.totalBudget === mx ? 'winner-val' : ''}">${fmt(calc.totalBudget)}</td>`;
+  }).join('');
+
+  const totSpend = calcs.map(({ calc }) => {
+    const mn = Math.min(...calcs.map(c => c.calc.totalSpending));
+    return `<td class="num ${calc.totalSpending === mn ? 'winner-val' : ''}">${fmt(calc.totalSpending)}</td>`;
+  }).join('');
+
+  const balCells = calcs.map(({ calc }) => {
+    const isW = calc.solde === maxDiff;
+    return `<td class="num ${calc.solde >= 0 ? 'pos' : 'neg'} ${isW ? 'winner-val' : ''}">${fmt(calc.solde)}</td>`;
+  }).join('');
+
+  document.getElementById('compareGrid').innerHTML = `
+    <div class="compare-overflow"><table class="compare-table">
+      <thead><tr><th></th>${thCols}</tr></thead>
+      <tbody>
+        <tr class="sec-row"><td colspan="${calcs.length+1}">${t('funding')}</td></tr>
+        ${rows}
+        <tr class="tot-row"><td>${t('totalFunding')}</td>${totFund}</tr>
+        <tr class="sec-row"><td colspan="${calcs.length+1}">${t('spending')}</td></tr>
+        <tr class="tot-row"><td>${t('totalSpending')}</td>${totSpend}</tr>
+        <tr class="bal-row"><td><strong>${t('balance')}</strong></td>${balCells}</tr>
+      </tbody>
+    </table></div>`;
+}
+
+function scrollToCompare() {
+  document.getElementById('compareSection').scrollIntoView({ behavior: 'smooth' });
+}
+
+// ================================================================
+// RENDER BRUT NET
+// ================================================================
+function renderBrutNet() {
+  const bn = calcBrutNet();
+  const sim = activeSim();
+
+  const sitLabels = {
+    celibataire: lang==='fr'?'Célibataire':'Single',
+    marie_revenu: lang==='fr'?'Marié(e) / Coh. légal — conjoint avec revenus':'Married / Legal cohabitant — spouse with income',
+    marie_sans_revenu: lang==='fr'?'Marié(e) / Coh. légal — conjoint sans revenus':'Married / Legal cohabitant — spouse without income',
+    divorce: lang==='fr'?'Séparé(e) / Divorcé(e)':'Separated / Divorced'
+  };
+
+  const atnParts = [];
+  if (bn.hasGSM) atnParts.push('GSM 3€');
+  if (bn.hasTab) atnParts.push('Tablette 3€');
+  if (bn.hasPC) atnParts.push('PC 6€');
+  if (bn.hasAboGSM) atnParts.push('Abo GSM 9€');
+
+  document.getElementById('bn-recap').innerHTML = `
+    <div class="recap-item"><div class="ri-label">${t('riSalaire')}</div><div class="ri-val">${fmt(bn.brutPro)}</div><div class="ri-src">✦ Onglet 1</div></div>
+    <div class="recap-item"><div class="ri-label">${t('riPartSal')}</div><div class="ri-val">${bn.partSalMensuel > 0 ? fmt(-bn.partSalMensuel) : '0,00 €'}</div><div class="ri-src">✦ Onglet 2</div></div>
+    <div class="recap-item"><div class="ri-label">${t('riBrutFIP')}</div><div class="ri-val">${fmt(bn.brutApresPartSal)}</div><div class="ri-src">✦ Calculé</div></div>
+    <div class="recap-item"><div class="ri-label">${t('riCarto')}</div><div class="ri-val">Carto ${bn.carto} → ${fmt(bn.teleTravail)}/mois</div><div class="ri-src">✦ Onglet 1</div></div>
+    <div class="recap-item"><div class="ri-label">${t('riATN')}</div><div class="ri-val">${atnParts.length > 0 ? atnParts.join(' + ') + '/mois' : 'Aucun'}</div><div class="ri-src">✦ Onglet 2</div></div>
+    <div class="recap-item"><div class="ri-label">${t('riATNVoiture')}</div><div class="ri-val">${fmt(bn.atnVoiture)}/mois</div><div class="ri-src">✦ Onglet 1</div></div>
+  `;
+
+  document.getElementById('bn-results').innerHTML = `
+    <div class="result-big pos" style="margin-bottom:14px">
+      <div class="r-label">${t('rNetMensuel')}</div>
+      <div class="r-amount">${fmt(bn.netFinal)}</div>
+      <div class="r-sub">${t('rNetAnnuel')}: ${fmt(bn.netAnnuel)}</div>
+    </div>
+
+    <div class="r-section">${lang==='fr'?'Calcul du brut imposable':'Taxable gross calculation'}</div>
+    <div class="r-line"><span>${t('rBrutPro')}</span><span class="val muted">${fmt(bn.brutPro)}</span></div>
+    <div class="r-line"><span>${t('rPartDed')}</span><span class="val neg">${bn.partSalMensuel > 0 ? fmt(-bn.partSalMensuel) : '0,00 €'}</span></div>
+    <div class="r-line"><span>${t('rBrutFIP')}</span><span class="val muted">${fmt(bn.brutApresPartSal)}</span></div>
+    <div class="r-line"><span>${t('rONSS')} (13,07%)</span><span class="val neg">${fmt(-bn.cotisONSSBrute)}</span></div>
+    ${bn.bonusSocial > 0 ? `<div class="r-line" style="font-size:11px"><span>↳ Bonus à l'emploi social <span style="background:#FFF3CD;color:#856404;padding:1px 5px;border-radius:4px;font-size:10px">~estimation</span></span><span class="val pos">${fmt(bn.bonusSocial)}</span></div>` : ''}
+    <div class="r-line"><span>${t('rATNVoiture')}</span><span class="val muted">${fmt(bn.atnVoiture)}</span></div>
+    <div class="r-line"><span>${t('rATNMulti')}</span><span class="val muted">${fmt(bn.atnMulti)}</span></div>
+    <div class="r-line" style="font-weight:700"><span>${t('rImposable')}</span><span class="val muted">${fmt(bn.imposableMensuel)}</span></div>
+
+    <div class="r-sep"></div>
+    <div class="r-section">${lang==='fr'?'Déductions & éléments nets':'Deductions & net elements'}</div>
+    <div class="r-line"><span>${t('rPP')}</span><span class="val neg">${fmt(-bn.ppMensuel)}</span></div>
+    <div class="r-line"><span>${t('rCotSpec')}</span><span class="val neg">${fmt(-bn.cotSpec)}</span></div>
+    <div class="r-line"><span>${t('rRecupVoiture')}</span><span class="val neg">${fmt(-bn.atnVoiture)}</span></div>
+    <div class="r-line"><span>${t('rRecupMulti')}</span><span class="val neg">${fmt(-bn.atnMulti)}</span></div>
+    <div class="r-line"><span>${t('rTeletravail')}</span><span class="val pos">${fmt(bn.teleTravail)}</span></div>
+    ${bn.bFiscal > 0 ? `<div class="r-line"><span>${lang==='fr'?'+ Bonus à l\'emploi fiscal':'+ Fiscal work bonus'} <span style="background:#FFF3CD;color:#856404;padding:1px 5px;border-radius:4px;font-size:10px">~estimation</span></span><span class="val pos">${fmt(bn.bFiscal)}</span></div>` : ''}
+
+    <div class="r-sep"></div>
+    <div class="r-line" style="font-weight:700;font-size:14px"><span>${t('rNetMensuel')}</span><span class="val pos">${fmt(bn.netFinal)}</span></div>
+    <div class="r-line"><span>${t('rNetAnnuel')}</span><span class="val pos">${fmt(bn.netAnnuel)}</span></div>
+
+    <div class="pfa-box">
+      <div class="pfa-title">${t('rPFATitle')} <span style="background:rgba(255,255,255,0.15);border-radius:4px;padding:1px 6px;font-size:9px;letter-spacing:0.05em">~estimation</span></div>
+      <div style="display:flex;flex-direction:column;gap:6px;margin-top:4px">
+        <div style="display:flex;justify-content:space-between;align-items:center;font-size:12px;opacity:0.7">
+          <span>Solde FIP</span><span>${fmt(bn.pfaSolde)}</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;font-size:12px;opacity:0.7">
+          <span>Brut PFA (÷ 1,17)</span><span>${fmt(bn.pfaBrut)}</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;font-size:12px;opacity:0.6">
+          <span>− ONSS (13,07%)</span><span>−${fmt(bn.pfaONSS)}</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;font-size:12px;opacity:0.6">
+          <span>− PP (45%)</span><span>−${fmt(bn.pfaPP)}</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;border-top:1px solid rgba(255,255,255,0.15);padding-top:8px;margin-top:2px">
+          <span style="font-size:13px;font-weight:700;opacity:0.9">${t('rNet')}</span>
+          <span style="font-family:'Calibri',Georgia,serif;font-size:1.6rem;color:#7ECFFF">${fmt(bn.pfaNet)}</span>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+// ================================================================
+// PDF EXPORT
+// ================================================================
+function exportPDF() {
+  const sim = activeSim();
+  const bn  = calcBrutNet();
+  const c   = sim ? calcFIPSim(sim) : null;
+  if (!sim || !c) return;
+
+  const btn = document.querySelector('.action-row .btn-primary');
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ Génération...'; }
+
+  const f = (n, d=2) => {
+    if (n === null || n === undefined || isNaN(n)) return '—';
+    return (n < 0 ? '-' : '') + Math.abs(n).toLocaleString('fr-BE', { minimumFractionDigits: d, maximumFractionDigits: d }) + ' €';
+  };
+
+  const today = new Date().toLocaleDateString('fr-BE', { day:'2-digit', month:'long', year:'numeric' });
+  const sit = { celibataire:'Célibataire', marie_revenu:'Marié(e) / Coh. légal — conjoint avec revenus',
+                marie_sans_revenu:'Marié(e) / Coh. légal — conjoint sans revenus', divorce:'Séparé(e) / Divorcé(e)' };
+
+  const spendRows = c.spendingItems.filter(i => i.total > 0).map(i =>
+    `<tr>
+      <td><strong>${i.label}</strong>${i.monthly ? `<br><span style="font-size:9px;color:#888">${f(i.monthly)}/mois</span>` : ''}</td>
+      <td style="font-size:9.5px;color:#555;vertical-align:middle">${i.period || '—'}</td>
+      <td class="num green">${f(i.total)}</td>
+    </tr>`
+  ).join('');
+
+  const html = `<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Simulation FIP</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family: Arial, sans-serif; font-size: 12px; color: #1E2D6B; background: #fff; padding: 28px 32px; width:794px; }
+  .doc-header { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:22px; padding-bottom:14px; border-bottom:3px solid #1E2D6B; }
+  .doc-title h1 { font-size:20px; font-weight:700; color:#1E2D6B; }
+  .doc-title p  { font-size:10px; color:#666; margin-top:3px; }
+  .doc-meta { text-align:right; font-size:10px; color:#888; line-height:1.7; }
+  .doc-meta strong { color:#1E2D6B; font-size:12px; display:block; }
+  .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:14px; }
+  .section-title { font-size:9px; font-weight:700; letter-spacing:0.12em; text-transform:uppercase; color:#1E2D6B; margin-bottom:8px; padding-bottom:5px; border-bottom:1.5px solid #DFF0FA; }
+  .card { border:1px solid #e2e8e4; border-radius:8px; padding:13px 15px; background:#fff; }
+  .card.green-bg { background:#EEF4FA; border-color:#3B8DC8; }
+  .card.dark-bg  { background:#1E2D6B; color:#fff; border:none; border-radius:8px; padding:13px 15px; }
+  .card.dark-bg .section-title { color:#7ECFFF; border-color:rgba(255,255,255,0.15); }
+  .big-number { font-size:26px; font-weight:700; color:#1E2D6B; font-family:Georgia,serif; line-height:1.1; }
+  .big-number.white { color:#7ECFFF; }
+  .big-sub { font-size:10px; color:#666; margin-top:3px; }
+  .big-sub.white { color:rgba(255,255,255,0.6); }
+  table { width:100%; border-collapse:collapse; }
+  table th { font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:0.06em; color:#888; padding:4px 6px; border-bottom:1.5px solid #e2e8e4; text-align:left; }
+  table td { padding:4px 6px; border-bottom:1px solid #f0f4f1; font-size:10.5px; }
+  table tr:last-child td { border-bottom:none; }
+  table tr.total-row td { font-weight:700; border-top:2px solid #DFF0FA; padding-top:6px; background:#F4F7FB; }
+  .num { text-align:right; font-weight:600; }
+  .green { color:#1E2D6B; }
+  .red   { color:#c0392b; }
+  .muted { color:#555; }
+  .badge { display:inline-block; padding:1px 5px; border-radius:3px; font-size:8px; font-weight:700; background:#FFF3CD; color:#856404; }
+  .row-line { display:flex; justify-content:space-between; align-items:center; padding:3px 0; border-bottom:1px solid rgba(255,255,255,0.08); font-size:10.5px; color:rgba(255,255,255,0.8); }
+  .row-line:last-child { border-bottom:none; }
+  .row-line .val { font-weight:600; }
+  .row-line-light { display:flex; justify-content:space-between; align-items:center; padding:3px 0; border-bottom:1px solid #f0f4f1; font-size:10.5px; }
+  .row-line-light:last-child { border-bottom:none; }
+  .solde-box { display:flex; justify-content:space-between; align-items:center; margin-top:10px; padding:7px 11px; border-radius:6px; background:${c.solde >= 0 ? '#DFF0FA' : '#fde8e8'}; border:1.5px solid ${c.solde >= 0 ? '#3B8DC8' : '#f5b5b5'}; }
+  .solde-box span { font-size:10px; font-weight:600; color:${c.solde >= 0 ? '#1E2D6B' : '#c0392b'}; }
+  .solde-box strong { font-size:15px; font-family:Georgia,serif; color:${c.solde >= 0 ? '#1E2D6B' : '#c0392b'}; }
+  .footer { margin-top:20px; padding-top:10px; border-top:1px solid #e2e8e4; display:flex; justify-content:space-between; font-size:9px; color:#aaa; }
+  .mt { margin-top:10px; }
+</style>
+</head>
+<body>
+<div class="doc-header">
+  <div class="doc-title">
+    <h1>Simulation FIP — ${sim.name}</h1>
+    <p>Flex Income Plan · Partenamut · Exercice 2026</p>
+  </div>
+  <div class="doc-meta">
+    <strong>${today}</strong>
+    Salaire brut mensuel : ${f(bn.brutPro)}<br>
+    Situation : ${sit[document.querySelector('input[name="situation"]:checked')?.value] || '—'}<br>
+    Régime : ${document.getElementById('p-regime')?.value || 100} %
+  </div>
+</div>
+
+<div class="grid2">
+  <div class="card green-bg">
+    <div class="section-title">💰 Budget FIP disponible</div>
+    <div class="big-number">${f(c.totalBudget)}</div>
+    <div class="big-sub">Prime fin d'année + participations converties</div>
+    <div class="mt">
+      <div class="row-line-light"><span>Prime de fin d'année (PFA)</span><span class="val green">${f(c.pfaTotal)}</span></div>
+      ${c.partSalBudget > 0 ? `<div class="row-line-light"><span>Participation salariale</span><span class="val green">${f(c.partSalBudget)}</span></div>` : ''}
+      ${c.partSal2Budget > 0 ? `<div class="row-line-light"><span>Participation salariale 2</span><span class="val green">${f(c.partSal2Budget)}</span></div>` : ''}
+      ${c.budgetConge > 0 ? `<div class="row-line-light"><span>Jours de congé convertis</span><span class="val green">${f(c.budgetConge)}</span></div>` : ''}
+    </div>
+    <div class="solde-box">
+      <span>${c.solde >= 0 ? '✓ Solde disponible' : '⚠ Budget dépassé'}</span>
+      <strong>${f(c.solde)}</strong>
+    </div>
+  </div>
+  <div class="card dark-bg">
+    <div class="section-title">💶 Salaire net mensuel estimé</div>
+    <div class="big-number white">${f(bn.netFinal)}</div>
+    <div class="big-sub white">Net annuel : ${f(bn.netAnnuel)}</div>
+    <div class="mt">
+      <div class="row-line"><span>Brut professionnel</span><span class="val" style="color:rgba(255,255,255,0.9)">${f(bn.brutPro)}</span></div>
+      <div class="row-line"><span>− ONSS (13,07%)</span><span class="val" style="color:#ff9494">−${f(bn.cotisONSSBrute)}</span></div>
+      <div class="row-line"><span>− Précompte professionnel</span><span class="val" style="color:#ff9494">−${f(bn.ppMensuel)}</span></div>
+      ${bn.bFiscal > 0 ? `<div class="row-line"><span>+ Bonus à l'emploi</span><span class="val" style="color:#7ECFFF">+${f(bn.bFiscal)}</span></div>` : ''}
+    </div>
+  </div>
+</div>
+
+<div class="grid2">
+  <div class="card">
+    <div class="section-title">🎁 Avantages sélectionnés</div>
+    ${c.spendingItems.filter(i => i.total > 0).length === 0
+      ? '<p style="color:#888;font-size:11px;font-style:italic;padding:8px 0">Aucun avantage sélectionné</p>'
+      : `<table>
+          <thead><tr><th>Avantage</th><th>Période</th><th style="text-align:right">Total</th></tr></thead>
+          <tbody>
+            ${spendRows}
+            <tr class="total-row"><td colspan="2">Total dépensé</td><td class="num green">${f(c.totalSpending)}</td></tr>
+          </tbody>
+        </table>`
+    }
+  </div>
+  <div class="card">
+    <div class="section-title">📊 Détail brut → net</div>
+    <table><tbody>
+      <tr><td>Salaire brut professionnel</td><td class="num muted">${f(bn.brutPro)}</td></tr>
+      ${bn.partSalMensuel > 0 ? `<tr><td>− Participation salariale</td><td class="num red">−${f(bn.partSalMensuel)}</td></tr>` : ''}
+      <tr><td>− ONSS (13,07%)</td><td class="num red">−${f(bn.cotisONSSBrute)}</td></tr>
+      ${bn.atnVoiture > 0 ? `<tr><td>+ ATN voiture</td><td class="num muted">${f(bn.atnVoiture)}</td></tr>` : ''}
+      ${bn.atnMulti > 0 ? `<tr><td>+ ATN multimédia</td><td class="num muted">${f(bn.atnMulti)}</td></tr>` : ''}
+      <tr><td>= Brut imposable</td><td class="num muted">${f(bn.imposableMensuel)}</td></tr>
+      <tr><td>− Précompte professionnel</td><td class="num red">−${f(bn.ppMensuel)}</td></tr>
+      <tr><td>− Cotisation spéciale</td><td class="num red">−${f(bn.cotSpec)}</td></tr>
+      ${bn.atnVoiture > 0 ? `<tr><td>− Récup. ATN voiture</td><td class="num red">−${f(bn.atnVoiture)}</td></tr>` : ''}
+      <tr><td>+ Indemnité télétravail</td><td class="num green">+${f(bn.teleTravail)}</td></tr>
+      ${bn.bFiscal > 0 ? `<tr><td>+ Bonus à l'emploi <span class="badge">~estim.</span></td><td class="num green">+${f(bn.bFiscal)}</td></tr>` : ''}
+      <tr class="total-row"><td><strong>Net mensuel estimé</strong></td><td class="num green">${f(bn.netFinal)}</td></tr>
+    </tbody></table>
+  </div>
+</div>
+
+<div class="footer">
+  <span>Généré le ${today} via le simulateur FIP Partenamut</span>
+  <span>⚠ Simulation estimative. Ne prend pas en compte les chèques-repas ni l'assurance groupe. Pour une estimation complète, consultez votre fiche de paie.</span>
+</div>
+</body></html>`;
+
+  // Render in a hidden div directly in the page (no iframe = no CSP block)
+  const container = document.createElement('div');
+  container.style.cssText = 'position:fixed;top:0;left:-9999px;width:794px;background:#fff;z-index:-1;pointer-events:none';
+  container.innerHTML = html;
+  document.body.appendChild(container);
+
+  // Small delay to let styles apply
+  setTimeout(() => {
+    window.html2canvas(container, {
+      scale: 2,
+      useCORS: true,
+      backgroundColor: '#ffffff',
+      width: 794,
+      windowWidth: 794,
+      logging: false
+    }).then(canvas => {
+      const imgData = canvas.toDataURL('image/png');
+      const { jsPDF } = window.jspdf;
+      const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+      const pdfW = pdf.internal.pageSize.getWidth();
+      const pdfH = pdf.internal.pageSize.getHeight();
+      // canvas is 794*2 px wide → map to A4 width (210mm)
+      const imgHeightMm = canvas.height * pdfW / canvas.width;
+
+      let yPos = 0;
+      while (yPos < imgHeightMm) {
+        if (yPos > 0) pdf.addPage();
+        pdf.addImage(imgData, 'PNG', 0, -yPos, pdfW, imgHeightMm);
+        yPos += pdfH;
+      }
+
+      const filename = `FIP_${sim.name.replace(/[^a-zA-Z0-9]/g,'_')}_${new Date().toISOString().slice(0,10)}.pdf`;
+      pdf.save(filename);
+      document.body.removeChild(container);
+      if (btn) { btn.disabled = false; btn.textContent = '📄 Exporter en PDF'; }
+    }).catch(err => {
+      console.error('PDF error:', err);
+      document.body.removeChild(container);
+      if (btn) { btn.disabled = false; btn.textContent = '📄 Exporter en PDF'; }
+    });
+  }, 300);
+}
+
+
+// ================================================================
+// UTILS
+// ================================================================
+function fmt(n, dec=2) {
+  if (n === null || n === undefined || isNaN(n)) return '—';
+  return (n < 0 ? '-' : '') + Math.abs(n).toLocaleString('fr-BE', { minimumFractionDigits: dec, maximumFractionDigits: dec }) + ' €';
+}
+function getVal(id) { return parseFloat(document.getElementById(id)?.value) || 0; }
+function getRadio(name) { const el = document.querySelector(`input[name="${name}"]:checked`); return el ? el.value : null; }
+
+function toggleTeletravail(val) {
+  const cartoField = document.getElementById('carto-field');
+  if (cartoField) cartoField.style.display = val === 'oui' ? 'block' : 'none';
+  // Update radio-opt selected style
+  document.querySelectorAll('[name="teletravail"]').forEach(r => {
+    r.closest('.radio-opt').classList.toggle('selected', r.checked);
+  });
+  recalcAll();
+}
+
+function recalcAll() {
+  const brutPro = getVal('p-brut') * (getVal('p-regime') / 100);
+  document.getElementById('p-brut-pro-display').textContent = fmt(brutPro);
+  renderFIP();
+  renderBrutNet();
+}
+
+// ================================================================
+// TEXT EDITOR PANEL
+// ================================================================
+
+// Which keys to expose in the editor, grouped by section
+const EDIT_GROUPS = [
+  {
+    title: '🏠 Navigation & En-tête',
+    keys: ['tabProfil','tabFIP','tabBN','nextFIP','nextBN']
+  },
+  {
+    title: '👤 Onglet 1 — Mes informations',
+    keys: ['profilWelcomeTitle','profilWelcomeDesc','cardIdentite','lCarto','lRegime','hRegime','lSituation','sCelib','sMarieRev','sDivorce','lEnfants','lNbEnfants','lONSS','cardRemun','lBrut','hBrut','lBrutPro','cardATN','alertATN','lATNVoiture','hATNVoiture']
+  },
+  {
+    title: '🏦 Onglet 2 — Budget FIP',
+    keys: ['cardBudget','pfaMonthsLabel','lPFA','lJourConge','lPartSal','hPartSal','lJoursConge','lTotalBudget']
+  },
+  {
+    title: '🚗 Onglet 2 — Mobilité',
+    keys: ['cardMobilite','lVoiture','lCarburant','hCarburant','lElec','lVelo','lBorne','lParking']
+  },
+  {
+    title: '📱 Onglet 2 — Multimédia',
+    keys: ['cardMultimedia','alertATNAuto','lSmartphone','lTablette','lPC','lAboGSM','lInternet']
+  },
+  {
+    title: '❤️ Onglet 2 — Sociaux',
+    keys: ['cardSocial','lDentalia','hDentalia','lMedicalia','lEpargne','hEpargne']
+  },
+  {
+    title: '💵 Onglet 2 — Cash & Flexibilité',
+    keys: ['cardCash','lCash','hCash','cardFlex','lJoursFIP','lOffice']
+  },
+  {
+    title: '📊 Résultats FIP',
+    keys: ['rBudgetFIP','rTotalBudget','rSources','rPFA','rPartSal','rJours','rDepenses','rTotalDep','rSoldeDisp','rSoldeNeg','alertNeg','funding','spending','totalFunding','totalSpending','breakdown','export']
+  },
+  {
+    title: '📈 Onglet 3 — Simulation Brut→Net',
+    keys: ['bnInfoTitle','bnInfoDesc','cardRecap','bnDisclaimer','bnResultTitle','rBrutPro','rPartDed','rBrutFIP','rONSS','rATNVoiture','rATNMulti','rImposable','rPP','rCotSpec','rRecupVoiture','rRecupMulti','rTeletravail','rNetMensuel','rNetAnnuel','rPFATitle','rBrut','rNet']
+  },
+  {
+    title: '🔍 Récapitulatif & Divers',
+    keys: ['riSalaire','riPartSal','riBrutFIP','riCarto','riATN','riATNVoiture','addSim','compareHint','compareBtn','compareTitle','balance','balanceGross','fullYear','someMonths','months']
+  }
+];
+
+// Human-readable names for each key
+const KEY_LABELS = {
+  tabProfil: "Onglet 1 (titre)", tabFIP: "Onglet 2 (titre)", tabBN: "Onglet 3 (titre)",
+  nextFIP: "Bouton suivant → FIP", nextBN: "Bouton suivant → Brut/Net",
+  profilWelcomeTitle: "Message de bienvenue (titre)", profilWelcomeDesc: "Message de bienvenue (texte)",
+  cardIdentite: "Carte Identité (titre)", lCarto: "Cartographie", lRegime: "Régime de travail",
+  hRegime: "Aide régime de travail", lSituation: "Situation fiscale", sCelib: "Option Célibataire",
+  sMarieRev: "Option Marié avec revenus", sDivorce: "Option Divorcé", lEnfants: "Enfants à charge",
+  lNbEnfants: "Nombre d'enfants", lONSS: "ONSS applicable", cardRemun: "Carte Rémunération (titre)",
+  lBrut: "Salaire brut (label)", hBrut: "Aide salaire brut", lBrutPro: "Salaire proratisé (label)",
+  cardATN: "Carte ATN (titre)", alertATN: "Alerte ATN", lATNVoiture: "ATN Voiture (label)",
+  hATNVoiture: "Aide ATN voiture", cardBudget: "Carte Budget FIP (titre)",
+  pfaMonthsLabel: "Nb mois PFA", lPFA: "Prime fin d'année (label)", lJourConge: "Valeur jour congé (label)",
+  lPartSal: "Participation salariale (label)", hPartSal: "Aide participation salariale",
+  lJoursConge: "Jours congé à convertir", lTotalBudget: "Budget total (label)",
+  cardMobilite: "Section Mobilité (titre)", lVoiture: "Voiture de société", lCarburant: "Carte carburant",
+  hCarburant: "Aide carburant", lElec: "Carte recharge électrique", lVelo: "Vélo leasing",
+  lBorne: "Borne de recharge", lParking: "Carte de stationnement",
+  cardMultimedia: "Section Multimédia (titre)", alertATNAuto: "Alerte ATN multimédia",
+  lSmartphone: "Smartphone", lTablette: "Tablette", lPC: "PC / Laptop",
+  lAboGSM: "Abonnement smartphone", lInternet: "Internet@Home",
+  cardSocial: "Section Sociale (titre)", lDentalia: "Dentalia", hDentalia: "Aide Dentalia",
+  lMedicalia: "Medicalia", lEpargne: "Épargne-pension", hEpargne: "Aide épargne-pension",
+  cardCash: "Section Cash (titre)", lCash: "Paiement en espèces", hCash: "Aide cash",
+  cardFlex: "Section Flexibilité (titre)", lJoursFIP: "Jours FIP supp.", lOffice: "Office@Home",
+  rBudgetFIP: "Résultats FIP (titre)", rTotalBudget: "Budget total dispo", rSources: "Sources budget",
+  rPFA: "PFA (résultats)", rPartSal: "Participation (résultats)", rJours: "Congés convertis (résultats)",
+  rDepenses: "Section dépenses", rTotalDep: "Total dépenses", rSoldeDisp: "Message solde positif",
+  rSoldeNeg: "Message solde négatif", alertNeg: "Alerte dépassement budget",
+  funding: "Mot Funding", spending: "Mot Spending", totalFunding: "Total Funding", totalSpending: "Total Spending",
+  breakdown: "Titre détail", export: "Bouton imprimer",
+  bnInfoTitle: "Info Brut/Net (titre)", bnInfoDesc: "Info Brut/Net (texte)",
+  cardRecap: "Récap (titre)", bnDisclaimer: "Disclaimer", bnResultTitle: "Résultats BN (titre)",
+  rBrutPro: "Brut proratisé", rPartDed: "Participation déduite", rBrutFIP: "Brut après FIP",
+  rONSS: "ONSS", rATNVoiture: "ATN voiture (+)", rATNMulti: "ATN multimédia (+)",
+  rImposable: "Salaire imposable", rPP: "Précompte professionnel", rCotSpec: "Cotisation spéciale ONSS",
+  rRecupVoiture: "Récup ATN voiture (-)", rRecupMulti: "Récup ATN multimédia (-)",
+  rTeletravail: "Indemnité télétravail", rNetMensuel: "Net mensuel estimé",
+  rNetAnnuel: "Net annuel estimé", rPFATitle: "Titre PFA estimée", rBrut: "Mot Brut", rNet: "Net estimé",
+  riSalaire: "Recap: Salaire brut", riPartSal: "Recap: Participation",
+  riBrutFIP: "Recap: Brut après FIP", riCarto: "Recap: Cartographie/télétravail",
+  riATN: "Recap: ATN multimédia", riATNVoiture: "Recap: ATN voiture",
+  addSim: "Bouton ajouter simulation", compareHint: "Texte comparer", compareBtn: "Bouton comparer",
+  compareTitle: "Titre comparaison", balance: "Mot Solde", balanceGross: "Solde brut",
+  fullYear: "Bouton toute l'année", someMonths: "Bouton certains mois", months: "Mot mois"
+};
+
+// Collapsed state per section
+const epCollapsed = {};
+
+function toggleEditPanel() {
+  const panel = document.getElementById('edit-panel');
+  const overlay = document.getElementById('edit-overlay');
+  const isOpen = panel.style.display !== 'none';
+  if (isOpen) {
+    closeEditPanel();
+  } else {
+    panel.style.display = 'block';
+    overlay.style.display = 'block';
+    renderEditPanel();
+  }
+}
+
+function closeEditPanel() {
+  document.getElementById('edit-panel').style.display = 'none';
+  document.getElementById('edit-overlay').style.display = 'none';
+}
+
+function renderEditPanel() {
+  const content = document.getElementById('edit-panel-content');
+  let html = '';
+  EDIT_GROUPS.forEach((group, gi) => {
+    const collapsed = epCollapsed[gi] !== false; // default collapsed
+    html += `<div class="ep-section">
+      <div class="ep-section-title" onclick="toggleEPSection(${gi})">
+        <span>${group.title}</span>
+        <span style="font-size:14px;opacity:0.5">${collapsed ? '▶' : '▼'}</span>
+      </div>
+      <div id="ep-group-${gi}" style="display:${collapsed ? 'none' : 'block'}">
+        <div class="ep-fields">`;
+    group.keys.forEach(key => {
+      const val = (TRANS[lang][key] || '').replace(/"/g, '&quot;');
+      const isLong = val.length > 60 || val.includes('\n');
+      const label = KEY_LABELS[key] || key;
+      html += `<div class="ep-field">
+        <label>${label}</label>
+        ${isLong
+          ? `<textarea oninput="updateText('${key}',this.value)">${(TRANS[lang][key] || '').replace(/</g,'&lt;')}</textarea>`
+          : `<input type="text" value="${val}" oninput="updateText('${key}',this.value)">`
+        }
+      </div>`;
+    });
+    html += `</div></div></div>`;
+  });
+  content.innerHTML = html + '<div class="ep-saved" id="ep-saved">✓ Sauvegardé</div>';
+}
+
+function toggleEPSection(gi) {
+  epCollapsed[gi] = !epCollapsed[gi];
+  const el = document.getElementById('ep-group-' + gi);
+  if (el) el.style.display = epCollapsed[gi] ? 'none' : 'block';
+  // update chevron
+  renderEditPanel(); // re-render to update arrow icons
+}
+
+function updateText(key, val) {
+  TRANS[lang][key] = val;
+  // Show saved toast
+  const toast = document.getElementById('ep-saved');
+  if (toast) { toast.classList.add('show'); clearTimeout(toast._t); toast._t = setTimeout(() => toast.classList.remove('show'), 1500); }
+  // Refresh the app
+  recalcAll();
+  // Also update data-t elements directly
+  document.querySelectorAll(`[data-t="${key}"]`).forEach(el => el.textContent = val);
+}
+
+function resetTexts() {
+  if (!confirm('Réinitialiser tous les textes aux valeurs par défaut ?')) return;
+  // Re-copy from a fresh TRANS_DEFAULT stored at init
+  Object.keys(TRANS_DEFAULT[lang]).forEach(k => { TRANS[lang][k] = TRANS_DEFAULT[lang][k]; });
+  recalcAll();
+  document.querySelectorAll('[data-t]').forEach(el => {
+    const k = el.getAttribute('data-t');
+    if (TRANS[lang][k]) el.textContent = TRANS[lang][k];
+  });
+  renderEditPanel();
+}
+
+// Store defaults at load time
+const TRANS_DEFAULT = JSON.parse(JSON.stringify(TRANS));
+
+// ================================================================
+// INIT
+// ================================================================
+addSimulation();
+recalcAll();
+</script>
+
+<!-- ================================================================ -->
+<!-- TOUR GUIDÉ                                                        -->
+<!-- ================================================================ -->
+<style>
+  /* ── TOUR GUIDÉ ─────────────────────────────────── */
+  #tour-backdrop {
+    display: none; position: fixed; inset: 0; z-index: 9998;
+  }
+  #tour-backdrop.active { display: block; }
+
+  #tour-bubble {
+    position: fixed;
+    z-index: 10001;
+    isolation: isolate;
+    width: 300px;
+    max-width: calc(100vw - 32px);
+    background: #1E2D6B;
+    color: #fff;
+    border-radius: 14px;
+    padding: 20px 20px 16px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.40);
+    transition: opacity 0.25s, transform 0.25s;
+    opacity: 1;
+    box-sizing: border-box;
+  }
+  #tour-bubble.hidden { opacity: 0; pointer-events: none; }
+
+  #tour-bubble::before {
+    content: ''; position: absolute;
+    width: 12px; height: 12px;
+    background: #1E2D6B; transform: rotate(45deg);
+    z-index: -1;
+  }
+  #tour-bubble.arrow-top::before    { top: -6px;    left: 24px; }
+  #tour-bubble.arrow-bottom::before { bottom: -6px; left: 24px; }
+
+  .tour-step-lbl {
+    font-size: 10px; font-weight: 700;
+    letter-spacing: 0.08em; color: rgba(255,255,255,0.65);
+    text-transform: uppercase; margin-bottom: 7px;
+  }
+  .tour-title {
+    font-size: 15px; font-weight: 700;
+    margin-bottom: 9px; line-height: 1.3;
+    color: #ffffff;
+  }
+  .tour-body {
+    font-size: 13px; line-height: 1.6;
+    color: rgba(255,255,255,0.82); margin-bottom: 16px;
+  }
+  .tour-footer {
+    display: flex; align-items: center; gap: 8px;
+  }
+  .tour-dots {
+    display: flex; gap: 4px; flex: 1; flex-wrap: wrap; max-width: 120px;
+  }
+  .tour-dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: rgba(255,255,255,0.22); flex-shrink: 0;
+  }
+  .tour-dot.active { background: #3B8DC8; }
+  .tour-btn {
+    border: none; border-radius: 8px; padding: 7px 14px;
+    font-size: 13px; font-weight: 600; cursor: pointer;
+    font-family: Calibri, 'Calibri', 'Trebuchet MS', Arial, sans-serif; transition: background 0.2s; white-space: nowrap;
+  }
+  .tour-btn-skip { background: transparent; color: rgba(255,255,255,0.45); }
+  .tour-btn-skip:hover { color: rgba(255,255,255,0.75); }
+  .tour-btn-next { background: #3B8DC8; color: white; }
+  .tour-btn-next:hover { background: #2E7AB5; }
+
+  #tour-highlight-ring {
+    position: fixed; border-radius: 10px;
+    box-shadow: 0 0 0 4px #3B8DC8, 0 0 0 9999px rgba(0,0,0,0.50);
+    pointer-events: none; z-index: 10000;
+    transition: all 0.3s cubic-bezier(0.4,0,0.2,1);
+    display: none;
+  }
+  #tour-highlight-ring.active { display: block; }
+</style>
+
+<!-- ═══════════════════════════════════════════════════════════
+     TOUR GUIDÉ
+════════════════════════════════════════════════════════════ -->
+
+<div id="tour-backdrop"></div>
+<div id="tour-highlight-ring"></div>
+<div id="tour-bubble" class="hidden"></div>
+
+<script>
+const TOUR_STEPS = [
+  {
+    title: "Bienvenue dans le Simulateur FIP ! 👋",
+    body: "Ce tutoriel vous guide en <strong>8 étapes</strong> pour créer votre première simulation. Vous pouvez le relancer à tout moment via le bouton <strong>?</strong> en haut à droite.",
+    tab: null, target: null
+  },
+  {
+    title: "Étape 1 — C'est quoi le FIP ?",
+    body: "Le <strong>FIP (Flex Income Plan)</strong> vous permet de convertir votre <strong>prime de fin d'année</strong> en avantages : voiture, vélo, smartphone, tablette, PC, parking, borne de recharge, abonnement GSM, assurances… Cette prime est en temps normal taxée à <strong>plus de 55%</strong> — en la convertissant en avantages, vous augmentez significativement votre pouvoir d'achat.",
+    tab: 'profil', target: null
+  },
+  {
+    title: "Étape 2 — Votre salaire & situation",
+    body: "Renseignez votre <strong>salaire brut mensuel</strong>, votre régime de travail et votre situation familiale. Ces informations sont essentielles : elles déterminent votre budget FIP et votre précompte professionnel.",
+    tab: 'profil', target: () => document.querySelector('#pane-profil .card'), arrow: "top"
+  },
+  {
+    title: "Étape 3 — Votre budget disponible",
+    body: "En haut de l'onglet Cafétéria, vous voyez votre <strong>budget total</strong>, qui correspond à votre prime de fin d'année. Vous avez également la possibilité d'augmenter ce budget en <strong>convertissant une partie de votre salaire brut</strong>, en <strong>vendant des jours de congé</strong>, ou un mix des deux.",
+    tab: 'fip', target: () => document.querySelector('#fip-inputs .card'), arrow: "top"
+  },
+  {
+    title: "Étape 4 — Mobilité",
+    body: "La section <strong>Mobilité</strong> vous permet d'ajouter une voiture FIP, une carte carburant, une borne de recharge, un vélo en leasing ou une carte de stationnement. Chaque avantage sélectionné est décompté de votre budget en temps réel.",
+    tab: 'fip', target: () => document.querySelector('.section-lbl'), arrow: "top"
+  },
+  {
+    title: "Étape 5 — Multimédia & autres avantages",
+    body: "Au-delà de la mobilité, vous pouvez aussi opter pour un <strong>smartphone, une tablette, un PC</strong>, un abonnement GSM, ou des avantages sociaux comme Dentalia ou Medicalia.",
+    tab: 'fip', target: () => { const lbls = document.querySelectorAll('.section-lbl'); return lbls[1] || lbls[0]; }, arrow: "top"
+  },
+  {
+    title: "Étape 6 — Solde & comparaison",
+    body: "Le <strong>solde restant</strong> s'affiche en temps réel. Utiliser tout son budget est plus optimisé fiscalement, mais l'essentiel est de choisir ce qui vous convient. Utilisez la petite flèche <strong>↺</strong> pour remettre une simulation à zéro, et <strong>+ Ajouter</strong> pour comparer plusieurs scénarios côte à côte.",
+    tab: 'fip', target: () => document.querySelector('.add-sim-btn'), arrow: "top"
+  },
+  {
+    title: "Étape 7 — Impact sur votre net",
+    body: "L'onglet <strong>Brut → Net</strong> recalcule votre salaire net en tenant compte de votre participation salariale, des cotisations ONSS, du précompte professionnel 2026 et du bonus à l'emploi si applicable.",
+    tab: 'brutnet', target: () => document.querySelectorAll('.main-tab')[2], arrow: "bottom"
+  },
+  {
+    title: "Étape 8 — Résultat final",
+    body: "Le <strong>net estimé</strong> s'affiche en vert. Comparez votre net avec et sans FIP pour mesurer l'impact concret. Une fois satisfait(e) de votre simulation, vous pouvez <strong>encoder directement vos choix dans le FIP</strong>.",
+    tab: 'brutnet', target: () => document.querySelector('#pane-brutnet .card'), arrow: "top"
+  },
+  {
+    title: "Vous êtes prêt(e) ! 🎉",
+    body: "Bonne simulation ! Le bouton <strong>↺</strong> remet les champs à zéro et le bouton <strong>?</strong> relance ce tutoriel à tout moment.",
+    tab: null, target: null
+  }
+];
+
+let tourStep = 0;
+
+function startTour() {
+  tourStep = 0;
+  switchMain('profil', document.querySelectorAll('.main-tab')[0]);
+  document.getElementById('tour-backdrop').classList.add('active');
+  showTourStep();
+}
+
+function endTour() {
+  document.getElementById('tour-backdrop').classList.remove('active');
+  document.getElementById('tour-highlight-ring').classList.remove('active');
+  document.getElementById('tour-bubble').classList.add('hidden');
+  try { localStorage.setItem('fip_tour_done', '1'); } catch(e) {}
+}
+
+function showTourStep() {
+  const step = TOUR_STEPS[tourStep];
+  const bubble = document.getElementById('tour-bubble');
+  const ring   = document.getElementById('tour-highlight-ring');
+  const isLast  = tourStep === TOUR_STEPS.length - 1;
+  const isFirst = tourStep === 0;
+
+  // Navigate to the relevant tab
+  if (step.tab === 'profil')  switchMain('profil',  document.querySelectorAll('.main-tab')[0]);
+  if (step.tab === 'fip')     switchMain('fip',     document.querySelectorAll('.main-tab')[1]);
+  if (step.tab === 'brutnet') switchMain('brutnet', document.querySelectorAll('.main-tab')[2]);
+
+  // Progress bar (avoids dot overflow with many steps)
+  const totalContent = TOUR_STEPS.length - 2; // exclude intro & outro
+  const currentContent = Math.min(Math.max(tourStep - 1, 0), totalContent);
+  const pct = isFirst ? 0 : isLast ? 100 : Math.round(currentContent / totalContent * 100);
+  const progressBar = `<div style="flex:1;height:4px;background:rgba(255,255,255,0.15);border-radius:2px;overflow:hidden">
+    <div style="height:100%;width:${pct}%;background:#3B8DC8;border-radius:2px;transition:width 0.3s"></div>
+  </div>`;
+
+  bubble.className = 'hidden';
+  void bubble.offsetWidth;
+
+  bubble.innerHTML = `
+    <div class="tour-step-lbl">${isFirst || isLast ? 'Tutoriel FIP' : 'Étape ' + tourStep + ' / ' + (TOUR_STEPS.length - 2)}</div>
+    <div class="tour-title">${step.title}</div>
+    <div class="tour-body">${step.body}</div>
+    <div class="tour-footer">
+      ${progressBar}
+      ${!isLast ? '<button class="tour-btn tour-btn-skip" id="tour-skip-btn">Passer</button>' : ''}
+      <button class="tour-btn tour-btn-next" id="tour-next-btn">${isLast ? 'Terminer ✓' : 'Suivant →'}</button>
+    </div>`;
+
+  // Attach events via JS (NOT inline onclick) to avoid scope issues
+  const nextBtn = document.getElementById('tour-next-btn');
+  const skipBtn = document.getElementById('tour-skip-btn');
+  if (nextBtn) nextBtn.addEventListener('click', isLast ? endTour : nextTourStep);
+  if (skipBtn) skipBtn.addEventListener('click', endTour);
+
+  const target = step.target ? step.target() : null;
+
+  if (target) {
+    setTimeout(() => {
+      const rect = target.getBoundingClientRect();
+      const pad  = 6;
+      ring.style.top    = (rect.top    - pad) + 'px';
+      ring.style.left   = (rect.left   - pad) + 'px';
+      ring.style.width  = (rect.width  + pad * 2) + 'px';
+      ring.style.height = (rect.height + pad * 2) + 'px';
+      ring.classList.add('active');
+
+      const bW = 300, gap = 16;
+      const arrow = step.arrow || 'top';
+      let bTop, bLeft;
+      if (arrow === 'bottom') {
+        bTop  = rect.top - 250 - gap;
+        bLeft = rect.left + rect.width / 2 - bW / 2;
+      } else {
+        bTop  = rect.bottom + gap;
+        bLeft = rect.left + rect.width / 2 - bW / 2;
+      }
+      bLeft = Math.max(12, Math.min(window.innerWidth  - bW - 12, bLeft));
+      bTop  = Math.max(70, Math.min(window.innerHeight - 270 - 12, bTop));
+
+      bubble.style.top       = bTop + 'px';
+      bubble.style.left      = bLeft + 'px';
+      bubble.style.transform = '';
+      bubble.className       = 'tour-bubble arrow-' + arrow;
+    }, 300);
+  } else {
+    ring.classList.remove('active');
+    bubble.style.top       = '50%';
+    bubble.style.left      = '50%';
+    bubble.style.transform = 'translate(-50%, -50%)';
+    bubble.className       = 'tour-bubble';
+  }
+}
+
+function nextTourStep() {
+  if (tourStep < TOUR_STEPS.length - 1) {
+    tourStep++;
+    showTourStep();
+  }
+}
+
+// Auto-launch on first visit
+window.addEventListener('load', () => {
+  let firstVisit = true;
+  try { firstVisit = !localStorage.getItem('fip_tour_done'); } catch(e) {}
+  if (firstVisit) setTimeout(startTour, 900);
+});
+</script>
+
+</body>
+</html>
